@@ -27,6 +27,11 @@ module.exports = (function () {
 		// How this adapter should be synced
 		migrate: 'alter',
 
+		// Allow a schemaless datastore
+		defaults: {
+			schema: false
+		},
+
 		// File path for disk file output
 		filePath: '.tmp/disk.db',
 
