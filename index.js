@@ -69,7 +69,6 @@ module.exports = (function () {
 		},
 
 		find: function (collectionName, options, cb) {
-
 			// read();
 
 			// Get indices from original data which match, in order
@@ -79,7 +78,59 @@ module.exports = (function () {
 			_.each(matchIndices,function (matchIndex) {
 				resultSet.push(_.clone(data[collectionName][matchIndex]));
 			});
-
+          
+            // Sum the values instead of returning the result set
+            if (options.sum instanceof Array) {
+              
+              // Simple reduce function to add everything up
+              resultSet = [resultSet.reduce(function(a, b){
+                var res = {};
+                _.each(options.sum, function(key) {
+                  if(typeof a[key] === 'number') {
+                    res[key] = a[key];
+                  }
+                    
+                  if(typeof b[key] === 'number') {
+                    res[key] += b[key];
+                  }
+                });
+                return res;
+              })];
+            }
+          
+            // Average the values instead of returning the result set
+            else if (options.average instanceof Array) {
+              
+              // Start with base object to reduce over
+              var filler = {};
+              _.each(options.average, function(key) {
+                  filler[key] = { val: 0, num: 0 };
+              })
+              resultSet.unshift(filler);
+              
+              // Sumple reduce operation
+              resultSet = resultSet.reduce(function(a, b) {
+                var res = {};
+                _.each(options.average, function(key) {
+                  res[key] = {
+                    val: a[key].val + (typeof b[key] === 'number' ? b[key] : 0),
+                    num: a[key].num + 1
+                  };
+                });
+                return res;
+              })
+              
+              // Our reduce operation created an object that looks like this:
+              // { key: { val: <sum of values>, num: <number of values> } }
+              // And now we reduce that to an average
+              var calculatedResults = {};
+              for (var key in resultSet) {
+                // Don't divide by zero
+                calculatedResults[key] = resultSet[key].val/ (resultSet[key].num > 0 ? resultSet[key].num : 1);
+              }
+              resultSet = [calculatedResults];
+            }
+            
 			cb(null, resultSet);
 		},
 
