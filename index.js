@@ -80,9 +80,9 @@ module.exports = (function () {
 			});
           
             // If we're grouping
-            if(options.groupBy || options.sum || options.average) {
+            if(options.groupBy || options.sum || options.average || options.min || options.max) {
               // Check if we have calculations to do
-              if(!options.sum && !options.average) {
+              if(!options.sum && !options.average && !options.min && !options.max) {
                 return cb(new Error('Cannot groupBy without a calculation'));
               }
               
@@ -186,6 +186,52 @@ module.exports = (function () {
                     });
                     
                     finishedResults[i][sumKey]/=cnt;
+                  });
+                });
+              }
+              
+              if(options.min) {
+                
+                // iterate over all groups of data
+                groupedResults.forEach(function(group, i) {
+                  options.min.forEach(function(sumKey) {
+                    
+                    // keep track of current minimum
+                    var min = Infinity;
+
+                    // update min
+                    group.forEach(function(item) {
+                      if(typeof item[sumKey] === 'number') {
+                        if(item[sumKey] < min) {
+                          min = item[sumKey];
+                        }
+                      }
+                    });
+                    
+                    finishedResults[i][sumKey] = isFinite(min) ? min : null;
+                  });
+                });
+              }
+              
+              if(options.max) {
+                
+                // iterate over all groups of data
+                groupedResults.forEach(function(group, i) {
+                  options.max.forEach(function(sumKey) {
+                    
+                    // keep track of current maximum
+                    var max = -Infinity;
+
+                    // update max
+                    group.forEach(function(item) {
+                      if(typeof item[sumKey] === 'number') {
+                        if(item[sumKey] > max) {
+                          max = item[sumKey];
+                        }
+                      }
+                    });
+                    
+                    finishedResults[i][sumKey] = isFinite(max) ? max : null;
                   });
                 });
               }
