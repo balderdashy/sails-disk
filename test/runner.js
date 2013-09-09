@@ -11,13 +11,19 @@ var tests = require('waterline-adapter-tests'),
     mocha = require('mocha');
 
 /**
- * Build a Postgres Config File
+ * Build a Config File
  */
 
 var config = {};
 
 /**
+ * Expose Interfaces Used In Adapter
+ */
+
+var interfaces = ['semantic', 'queryable', 'migratable'];
+
+/**
  * Run Tests
  */
 
-var suite = new tests({ adapter: adapter, config: config });
+var suite = new tests({ adapter: adapter, config: config, interfaces: interfaces });
