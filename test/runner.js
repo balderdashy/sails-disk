@@ -7,14 +7,17 @@
  */
 
 var tests = require('waterline-adapter-tests'),
-    adapter = require('../index'),
+    adapter = require('../lib/adapter'),
     mocha = require('mocha');
 
 /**
  * Build a Config File
  */
 
-var config = {};
+var config = {
+  filePath: '.tmp/disk.db',
+  schema: false
+};
 
 /**
  * Expose Interfaces Used In Adapter
