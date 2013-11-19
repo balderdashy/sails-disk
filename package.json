@@ -22,12 +22,12 @@
   "license": "MIT",
   "readmeFilename": "README.md",
   "dependencies": {
-    "lodash": "2.1.0",
-    "waterline-criteria": "~0.9.3",
-    "fs-extra": "0.6.1"
+    "lodash": "2.3.0",
+    "waterline-criteria": "~0.9.6",
+    "fs-extra": "0.8.1"
   },
   "devDependencies": {
     "mocha": "~1.10.0",
-    "waterline-adapter-tests": "~0.9.3"
+    "waterline-adapter-tests": "~0.9.4"
   }
 }
