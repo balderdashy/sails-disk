@@ -19,6 +19,11 @@
     "sailsjs"
   ],
   "author": "Mike McNeil",
+  "contributors": [
+    {
+      "name": "Cody Stoltman"
+    }
+  ],
   "license": "MIT",
   "readmeFilename": "README.md",
   "dependencies": {
