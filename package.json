@@ -27,9 +27,9 @@
   "license": "MIT",
   "readmeFilename": "README.md",
   "dependencies": {
-    "lodash": "~2.0.0",
+    "lodash": "~2.4.1",
     "waterline-criteria": "git://github.com/balderdashy/waterline-criteria.git#associations",
-    "fs-extra": "~0.6.4",
+    "fs-extra": "~0.8.1",
     "async": "~0.2.9"
   },
   "devDependencies": {
