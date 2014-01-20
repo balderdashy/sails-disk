@@ -1,7 +1,7 @@
 {
   "name": "sails-disk",
   "version": "0.9.3",
-  "description": "Persistent non-production adapter for Sails.js / Waterline",
+  "description": "Simple local disk adapter for development w/ Sails.js / Waterline",
   "main": "index.js",
   "scripts": {
     "test": "node test/runner.js"
