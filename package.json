@@ -5,7 +5,7 @@
   "main": "lib/adapter.js",
   "scripts": {
     "test": "node test/runner.js",
-    "prepublish": "npm prune --production"
+    "prepublish": "npm prune"
   },
   "repository": {
     "type": "git",
