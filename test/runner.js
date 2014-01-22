@@ -15,7 +15,7 @@ var tests = require('waterline-adapter-tests'),
  */
 
 var config = {
-  filePath: '.tmp/disk.db',
+  filePath: '.tmp/',
   schema: false
 };
 
