@@ -29,13 +29,13 @@
   "readmeFilename": "README.md",
   "dependencies": {
     "lodash": "~2.4.1",
-    "waterline-criteria": "git://github.com/balderdashy/waterline-criteria.git#associations",
+    "waterline-criteria": "git://github.com/balderdashy/waterline-criteria.git#v0.10",
     "waterline-errors": "~0.10.0",
     "fs-extra": "~0.8.1",
     "async": "~0.2.9"
   },
   "devDependencies": {
     "mocha": "~1.13.0",
-    "waterline-adapter-tests": "git://github.com/balderdashy/waterline-adapter-tests.git#associations"
+    "waterline-adapter-tests": "git://github.com/balderdashy/waterline-adapter-tests.git#v0.10"
   }
 }
