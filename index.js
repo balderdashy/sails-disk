@@ -305,15 +305,17 @@ module.exports = (function () {
 
 			// Get indices from original data which match, in order
 			var matchIndices = getMatchIndices(data[collectionName], options);
+      var deletedValues = []
 
 			// Delete data which matches the criteria
 			data[collectionName] = _.reject(data[collectionName], function (model, i) {
-				return _.contains(matchIndices, i);
+				deletedValues = _.contains(matchIndices, i);
+        return deletedValues;
 			});
 
 			write();
 
-			cb();
+			cb(null, deletedValues);
 		}
 
 	};
