@@ -43,6 +43,7 @@
     "waterlineVersion": "~0.10.0",
     "interfaces": [
       "semantic",
+      "migratable",
       "queryable",
       "associations"
     ]
