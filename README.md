@@ -1,7 +1,6 @@
+# Sails-Disk <a href="http://en.wikipedia.org/wiki/Embedded_database"><img src="http://beta.sailsjs.org/images/icon_hardisk.png" title="sails-disk"/></a>
 
-# <img src="http://beta.sailsjs.org/images/icon_hardisk.png" title="sails-disk"/> Disk
-
-Sails-disk is a local disk adapter for the Sails framework and Waterline ORM.  Functions as a persistent object store which works great as a bundled, starter database (with the strict caveat that it is for non-production use only).  It is bundled by default in new Sails projects.
+A local disk adapter for the Sails framework and Waterline ORM.  Functions as a persistent object store which works great as a bundled, starter database (with the strict caveat that it is for non-production use only).  It is bundled by default in new Sails projects.
 
 
 
