@@ -47,7 +47,6 @@ log('http://links.sailsjs.org/docs/plugins/adapters/interfaces');
 console.log();
 
 
-
 /**
  * Integration Test Runner
  *
