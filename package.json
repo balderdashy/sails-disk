@@ -4,7 +4,7 @@
   "description": "Persistent local-disk adapter for Sails.js / Waterline",
   "main": "lib/adapter.js",
   "scripts": {
-    "test": "node test/runner.js",
+    "test": "rm -rf .tmp && node test/runner.js",
     "prepublish": "npm prune"
   },
   "repository": {
