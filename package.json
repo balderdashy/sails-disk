@@ -32,7 +32,8 @@
     "waterline-criteria": "~0.10.7",
     "waterline-errors": "~0.10.0",
     "fs-extra": "~0.8.1",
-    "async": "~0.2.9"
+    "async": "~0.2.9",
+    "merge-defaults": "^0.2.1"
   },
   "devDependencies": {
     "mocha": "~1.13.0",
