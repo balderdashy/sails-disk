@@ -33,7 +33,6 @@
     "waterline-errors": "~0.10.0",
     "fs-extra": "~0.8.1",
     "async": "~0.2.9",
-    "merge-defaults": "~0.2.1",
     "waterline-cursor": "~0.0.0"
   },
   "devDependencies": {
