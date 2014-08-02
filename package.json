@@ -33,7 +33,7 @@
     "waterline-errors": "~0.10.0",
     "fs-extra": "~0.8.1",
     "async": "~0.2.9",
-    "waterline-cursor": "git://github.com/balderdashy/waterline-cursor.git#master"
+    "waterline-cursor": "~0.0.3"
   },
   "devDependencies": {
     "mocha": "~1.13.0",
