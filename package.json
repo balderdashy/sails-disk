@@ -30,7 +30,7 @@
   "dependencies": {
     "lodash": "~2.4.1",
     "waterline-criteria": "~0.10.7",
-    "waterline-errors": "~0.10.0",
+    "waterline-errors": "~0.10.0-rc",
     "fs-extra": "~0.8.1",
     "async": "~0.2.9",
     "waterline-cursor": "~0.0.3"
