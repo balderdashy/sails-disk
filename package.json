@@ -46,6 +46,9 @@
       "semantic",
       "queryable",
       "associations"
+    ],
+    "features": [
+      "cross-adapter"
     ]
   }
 }
