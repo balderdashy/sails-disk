@@ -19,7 +19,7 @@ A local disk adapter for the Sails framework and Waterline ORM.  Functions as a 
 #### License
 
 **[MIT](./LICENSE)**
-&copy; 2015
+&copy; 2016
 [Mike McNeil](http://mikermcneil.com), [Balderdash](http://balderdash.co) & contributors
 
 [Sails](http://sailsjs.org) is free and open-source under the [MIT License](http://sails.mit-license.org/).
