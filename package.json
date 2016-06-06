@@ -28,7 +28,7 @@
   "license": "MIT",
   "readmeFilename": "README.md",
   "dependencies": {
-    "lodash": "2.4.1",
+    "lodash": "3.10.1",
     "waterline-criteria": "~1.0.0",
     "waterline-errors": "~0.10.0",
     "fs-extra": "0.8.1",
