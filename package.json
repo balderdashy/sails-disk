@@ -28,12 +28,12 @@
   "license": "MIT",
   "readmeFilename": "README.md",
   "dependencies": {
+    "async": "2.0.1",
+    "fs-extra": "0.30.0",
     "lodash": "3.10.1",
     "waterline-criteria": "~1.0.1",
-    "waterline-errors": "~0.10.1",
-    "fs-extra": "0.30.0",
-    "async": "~0.2.9",
-    "waterline-cursor": "~0.0.6"
+    "waterline-cursor": "~0.0.6",
+    "waterline-errors": "~0.10.1"
   },
   "devDependencies": {
     "mocha": "~2.5.3",
