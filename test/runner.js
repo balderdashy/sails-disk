@@ -45,7 +45,7 @@ log.info('Running `waterline-adapter-tests` against ' + interfaces.length + ' in
 log.info('( ' + interfaces.join(', ') + ' )');
 console.log();
 log('Latest draft of Waterline adapter interface spec:');
-log('http://links.sailsjs.org/docs/plugins/adapters/interfaces');
+log('http://sailsjs.com/documentation/concepts/extending-sails/adapters');
 console.log();
 
 
@@ -75,7 +75,7 @@ new TestRunner({
   // The set of adapter interfaces to test against.
   // (grabbed these from this adapter's package.json file above)
   interfaces: interfaces,
-  
+
   // The set of adapter features to test against.
   // (grabbed these from this adapter's package.json file above)
   features: features,

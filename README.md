@@ -1,28 +1,24 @@
-# Sails-Disk <a href="http://en.wikipedia.org/wiki/Embedded_database"><img src="http://beta.sailsjs.org/images/icon_hardisk.png" title="sails-disk"/></a>
+# sails-disk <a href="http://en.wikipedia.org/wiki/Embedded_database"><img src="http://sailsjs.com/images/icon_hardisk.png" title="sails-disk"/></a>
 
 A local disk adapter for the Sails framework and Waterline ORM.  Functions as a persistent object store which works great as a bundled, starter database (with the strict caveat that it is for non-production use only).  It is bundled by default in new Sails projects.
 
 
+## Bugs &nbsp; [![NPM version](https://badge.fury.io/js/sails-disk.svg)](http://npmjs.com/package/sails-disk)
 
-#### More Resources
+To report a bug, [click here](http://sailsjs.com/bugs).
 
-- [Stackoverflow](http://stackoverflow.com/questions/tagged/sails.js)
-- [#sailsjs on Freenode](http://webchat.freenode.net/) (IRC channel)
-- [Twitter](https://twitter.com/sailsjs)
-- [Professional/enterprise](https://github.com/balderdashy/sails-docs/blob/master/FAQ.md#are-there-professional-support-options)
-- [Tutorials](https://github.com/balderdashy/sails-docs/blob/master/FAQ.md#where-do-i-get-help)
-- [Waterline (ORM)](http://github.com/balderdashy/waterline)
-- [Sails.js Project Home](http://sailsjs.org)
+> This is a built-in module in the Sails framework.  It is installed automatically when you run `npm install sails`.
 
+#### Version notes
 
+The master branch of this repository holds `sails-disk` used in Sails versions 0.10.0 and up.  If you're looking for the version for the v0.9.x releases of Sails, the source is [located here](https://github.com/balderdashy/sails-disk/releases/tag/v0.9.7).
 
-#### License
+## Contributing &nbsp; [![Build Status](https://travis-ci.org/balderdashy/sails-disk.svg?branch=master)](https://travis-ci.org/balderdashy/sails-disk)
 
-**[MIT](./LICENSE)**
-&copy; 2016
-[Mike McNeil](http://mikermcneil.com), [Balderdash](http://balderdash.co) & contributors
+Please observe the guidelines and conventions laid out in the [Sails project contribution guide](http://sailsjs.com/contribute) when opening issues or submitting pull requests.
 
-[Sails](http://sailsjs.org) is free and open-source under the [MIT License](http://sails.mit-license.org/).
+[![NPM package info](https://nodei.co/npm/sails-disk.png?downloads=true)](http://npmjs.com/package/sails-disk)
 
+## License
 
-![image_squidhome@2x.png](http://i.imgur.com/RIvu9.png) 
+The [Sails framework](http://sailsjs.com) is free and open-source under the [MIT License](http://sailsjs.com/license).
