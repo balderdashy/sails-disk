@@ -9,10 +9,6 @@ To report a bug, [click here](http://sailsjs.com/bugs).
 
 > This is a built-in module in the Sails framework.  It is installed automatically when you run `npm install sails`.
 
-#### Version notes
-
-The master branch of this repository holds `sails-disk` used in Sails versions 0.10.0 and up.  If you're looking for the version for the v0.9.x releases of Sails, the source is [located here](https://github.com/balderdashy/sails-disk/releases/tag/v0.9.7).
-
 ## Contributing &nbsp; [![Build Status](https://travis-ci.org/balderdashy/sails-disk.svg?branch=master)](https://travis-ci.org/balderdashy/sails-disk)
 
 Please observe the guidelines and conventions laid out in the [Sails project contribution guide](http://sailsjs.com/contribute) when opening issues or submitting pull requests.
