@@ -9,7 +9,8 @@ To report a bug, [click here](http://sailsjs.com/bugs).
 
 > This is a built-in module in the Sails framework.  It is installed automatically when you run `npm install sails`.
 
-## Contributing &nbsp; [![Build Status](https://travis-ci.org/balderdashy/sails-disk.svg?branch=master)](https://travis-ci.org/balderdashy/sails-disk)
+## Contributing &nbsp; [![Build Status](https://travis-ci.org/balderdashy/sails-disk.svg?branch=master)](https://travis-ci.org/balderdashy/sails-disk) &nbsp; [![Build status on Windows](https://ci.appveyor.com/api/projects/status/g38xmocx4j23rfjs/branch/master?svg=true)](https://ci.appveyor.com/project/mikermcneil/sails-disk/branch/master)
+
 
 Please observe the guidelines and conventions laid out in the [Sails project contribution guide](http://sailsjs.com/contribute) when opening issues or submitting pull requests.
 
