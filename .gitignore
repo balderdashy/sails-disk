@@ -12,28 +12,35 @@
 #
 
 ############################
-# npm
+# sails / node.js / npm
 ############################
 node_modules
 npm-debug.log
-
+.node_history
 
 ############################
-# tmp, editor & OS files
+# editor & OS files
 ############################
-.tmp
 *.swo
 *.swp
 *.swn
 *.swm
+*.seed
+*.log
+*.out
+*.pid
+lib-cov
 .DS_STORE
 *#
+*\#
+.\#*
 *~
 .idea
+.netbeans
 nbproject
 
-
 ############################
-# Tests
+# misc
 ############################
-.waterline
+.tmp
+dump.rdb
