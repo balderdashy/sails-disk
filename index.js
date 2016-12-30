@@ -194,6 +194,9 @@ module.exports = (function sailsDisk () {
       // Get the nedb for the table in question.
       var db = datastore.dbs[query.using];
 
+      // Make sure the database is loaded.
+      db.loadDatabase();
+
       // Clear out any `null` _id value.
       if (_.isNull(query.newRecord._id)) {
         delete query.newRecord._id;
@@ -236,6 +239,9 @@ module.exports = (function sailsDisk () {
 
       // Get the nedb for the table in question.
       var db = datastore.dbs[query.using];
+
+      // Make sure the database is loaded.
+      db.loadDatabase();
 
       // Get the primary key column for thie table.
       var primaryKeyCol = datastore.primaryKeyCols[query.using];
@@ -292,6 +298,9 @@ module.exports = (function sailsDisk () {
 
       // Get the nedb for the table in question.
       var db = datastore.dbs[query.using];
+
+      // Make sure the database is loaded.
+      db.loadDatabase();
 
       var primaryKeyCol = datastore.primaryKeyCols[query.using];
 
@@ -355,6 +364,9 @@ module.exports = (function sailsDisk () {
       // Get the nedb for the table in question.
       var db = datastore.dbs[query.using];
 
+      // Make sure the database is loaded.
+      db.loadDatabase();
+
       // Get the primary key column for thie table.
       var primaryKeyCol = datastore.primaryKeyCols[query.using];
 
@@ -394,6 +406,9 @@ module.exports = (function sailsDisk () {
 
       // Get the nedb for the table in question.
       var db = datastore.dbs[query.using];
+
+      // Make sure the database is loaded.
+      db.loadDatabase();
 
       // If `fetch` is true, find the records BEFORE we remove them so that we can
       // send them back to the caller.
@@ -494,6 +509,9 @@ module.exports = (function sailsDisk () {
       // Get the nedb for the table in question.
       var db = datastore.dbs[query.using];
 
+      // Make sure the database is loaded.
+      db.loadDatabase();
+
       // Normalize the stage-3 query criteria into NeDB (really, MongoDB) criteria.
       var where = normalizeWhere(query.criteria.where);
 
@@ -533,7 +551,10 @@ module.exports = (function sailsDisk () {
 
       // Create the datastore file.
       var filename = path.resolve(datastore.config.dir, tableName + '.db');
-      var db = new nedb({ filename: filename, autoload: true });
+
+      // Don't autoload the database, as this can cause race conditions with automigrations.
+      // Instead, just call `loadDatabase` in adapter methods (it's idempotent).
+      var db = new nedb({ filename: filename, autoload: false });
       datastore.dbs[tableName] = db;
 
       // Re-create any unique indexes.
