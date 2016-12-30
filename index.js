@@ -535,6 +535,18 @@ module.exports = (function sailsDisk () {
       var filename = path.resolve(datastore.config.dir, tableName + '.db');
       var db = new nedb({ filename: filename, autoload: true });
       datastore.dbs[tableName] = db;
+
+      // Re-create any unique indexes.
+      _.each(definition, function(val, columnName) {
+        // If the attribute has `unique` set on it, or it's the primary key, add a unique index.
+        if (val.unique || val.primaryKey) {
+          db.ensureIndex({
+            fieldName: columnName,
+            unique: true
+          });
+        }
+      });
+
       return cb();
 
     },
