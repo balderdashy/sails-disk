@@ -235,10 +235,10 @@ module.exports = (function sailsDisk () {
       // Insert the documents into the db.
       db.insert(newRecords, function(err, newRecords) {
         if (err) {return cb(err);}
-        // if (query.meta && query.meta.fetch) {
+        if (query.meta && query.meta.fetch) {
           return cb(undefined, newRecords);
-        // }
-        // return cb();
+        }
+        return cb();
       });
 
     },
