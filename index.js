@@ -374,21 +374,15 @@ module.exports = (function sailsDisk () {
      */
     avg: function avg(datastoreName, query, cb) {
 
-      // Get a reference to the datastore.
-      var datastore = datastores[datastoreName];
+      adapter.find(datastoreName, query, function(err, records) {
 
-      // When implementing this method, this is where you'll
-      // perform the query and return the result, e.g.:
-      //
-      // datastore.dbConnection.find(query, function(err, result) {
-      //   if (err) {return cb(err);}
-      //   var sum = _.reduce(result, function(memo, row) { return memo + row[query.numericAttrName]; }, 0);
-      //   var avg = sum / result.length;
-      //   return cb(undefined, avg);
-      // });
+        if (err) { return cb(err); }
 
-      // But for now, this method is just a no-op.
-      return cb();
+        var sum = _.reduce(records, function(memo, row) { return memo + row[query.numericAttrName]; }, 0);
+        var avg = sum / records.length;
+        return cb(undefined, avg);
+
+      });
 
     },
 
@@ -404,20 +398,15 @@ module.exports = (function sailsDisk () {
      */
     sum: function sum(datastoreName, query, cb) {
 
-      // Get a reference to the datastore.
-      var datastore = datastores[datastoreName];
+      adapter.find(datastoreName, query, function(err, records) {
 
-      // When implementing this method, this is where you'll
-      // perform the query and return the result, e.g.:
-      //
-      // datastore.dbConnection.find(query, function(err, result) {
-      //   if (err) {return cb(err);}
-      //   var sum = _.reduce(result, function(memo, row) { return memo + row[query.numericAttrName]; }, 0);
-      //   return cb(undefined, sum);
-      // });
+        if (err) { return cb(err); }
 
-      // But for now, this method is just a no-op.
-      return cb();
+        var sum = _.reduce(records, function(memo, row) { return memo + row[query.numericAttrName]; }, 0);
+        return cb(undefined, sum);
+
+      });
+
 
     },
 
@@ -436,16 +425,14 @@ module.exports = (function sailsDisk () {
       // Get a reference to the datastore.
       var datastore = datastores[datastoreName];
 
-      // When implementing this method, this is where you'll
-      // perform the query and return the result, e.g.:
-      //
-      // datastore.dbConnection.count(query, function(err, result) {
-      //   if (err) {return cb(err);}
-      //   return cb(undefined, result);
-      // });
+      // Get the nedb for the table in question.
+      var db = datastore.dbs[query.using];
 
-      // But for now, this method is just a no-op.
-      return cb();
+      // Normalize the stage-3 query criteria into NeDB (really, MongoDB) criteria.
+      var where = normalizeCriteria(query.criteria.where);
+
+      // Count the documents into the db.
+      db.count(where, cb);
 
     },
 
