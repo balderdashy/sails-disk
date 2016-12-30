@@ -347,17 +347,35 @@ module.exports = (function sailsDisk () {
       // Get the nedb for the table in question.
       var db = datastore.dbs[query.using];
 
-      // Normalize the stage-3 query criteria into NeDB (really, MongoDB) criteria.
-      var where = normalizeWhere(query.criteria.where);
+      // If `fetch` is true, find the records BEFORE we remove them so that we can
+      // send them back to the caller.
+      (function maybeFetchRecords(done) {
 
-      // Remove the documents from the db.
-      db.remove(where, {multi: true}, function(err, numAffected) {
-        if (err) {return cb(err);}
         if (query.meta && query.meta.fetch) {
-          return cb(undefined, updatedRecords);
+          adapter.find(datastoreName, _.cloneDeep(query), function(err, records) {
+            if (err) { return cb(err); }
+            return done(records);
+          });
         }
-        return cb();
+        else {
+          return done();
+        }
+      })
+      // Now, destroy the records.
+      (function afterMaybeFetchingRecords(records) {
+
+        // Normalize the stage-3 query criteria into NeDB (really, MongoDB) criteria.
+        var where = normalizeWhere(query.criteria.where);
+
+        // Remove the documents from the db.
+        db.remove(where, {multi: true}, function(err, numAffected) {
+
+          // If `fetch` was true, `records` will hold the records we just destroyed.
+          return cb(undefined, records);
+
+        });
       });
+
 
     },
 
