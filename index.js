@@ -77,7 +77,12 @@ module.exports = (function sailsDisk () {
       var datastore = {
         config: datastoreConfig,
         // We'll add each model's nedb instance to this dictionary.
-        dbs: {}
+        dbs: {},
+        // We'll keep track of any auto-increment sequences in this dictionary, indexed by table name.
+        sequences: {},
+        // We'll keep track of the primary keys of each model in this datastore in this dictionary,
+        // indexed by table name.
+        primaryKeyCols: {}
       };
 
       // Add the datastore to the `datastores` dictionary.
@@ -90,18 +95,26 @@ module.exports = (function sailsDisk () {
         // Create a new NeDB instance for each model (an NeDB instance is like one MongoDB collection)
         _.each(models, function(modelDef, modelIdentity) {
 
+          datastore.primaryKeyCols[modelDef.tableName] = modelDef.definition[modelDef.primaryKey].columnName;
+
           // Create the nedb instance and save it to the `modelDbs` hash
           var filename = path.resolve(datastoreConfig.dir, modelDef.tableName + '.db');
           var db = new nedb({ filename: filename, autoload: true });
           datastore.dbs[modelDef.tableName] = db;
 
-          // Add any unique indexes
+          // Add any unique indexes and initialize any sequences.
           _.each(modelDef.definition, function(val, attributeName) {
-            if (val.autoMigrations && val.autoMigrations.unique) {
+            // If the attribute has `unique` set on it, or it's the primary key, add a unique index.
+            if (val.autoMigrations && (val.autoMigrations.unique || (attributeName === modelDef.primaryKey))) {
               db.ensureIndex({
                 fieldName: val.columnName,
                 unique: true
               });
+            }
+            // If the attribute has `autoIncrement` on it, and it's the primary key,
+            // and the primary key ISN'T `_id`, initialize a sequence for it.
+            if (modelDef.primaryKey !== '_id' && val.autoMigrations && val.autoMigrations.autoIncrement && (attributeName === modelDef.primaryKey)) {
+              datastore.sequences[modelDef.tableName + '_' + val.columnName + '_seq'] = 0;
             }
           });
 
@@ -186,11 +199,21 @@ module.exports = (function sailsDisk () {
         delete query.newRecord._id;
       }
 
+      // If there is a sequence for this table, and the column name referenced in the table
+      // does not have a value set, set it to the next value of the sequence.
+      var primaryKeyCol = datastore.primaryKeyCols[query.using];
+      var sequenceName = query.using + '_' + primaryKeyCol + '_seq';
+      if (!_.isUndefined(datastore.sequences[sequenceName]) && _.isNull(query.newRecord[primaryKeyCol]) || query.newRecord[primaryKeyCol] === 0) {
+        query.newRecord[primaryKeyCol] = ++datastore.sequences[sequenceName];
+      }
+
       // Insert the documents into the db.
-      db.insert(query.newRecord, function(err, newRecords) {
+      db.insert(query.newRecord, function(err, newRecord) {
         if (err) {return cb(err);}
         if (query.meta && query.meta.fetch) {
-          return cb(undefined, newRecords);
+          // If the primary key col for this table isn't `_id`, exclude it from the returned records.
+          if (primaryKeyCol !== '_id') { delete newRecord.id; }
+          return cb(undefined, newRecord);
         }
         return cb();
       });
@@ -214,11 +237,27 @@ module.exports = (function sailsDisk () {
       // Get the nedb for the table in question.
       var db = datastore.dbs[query.using];
 
+      // Get the primary key column for thie table.
+      var primaryKeyCol = datastore.primaryKeyCols[query.using];
+
+      // Get the possible sequence name for this table.
+      var sequenceName = query.using + '_' + primaryKeyCol + '_seq';
+
       // Clear out any `null` _id value.
       var newRecords = _.map(query.newRecords, function(newRecord) {
+
+        // If `null` is being sent in for this record's `_id` column, just delete it so that
+        // neDB sets it automatically.
         if (_.isNull(newRecord._id)) {
           delete newRecord._id;
         }
+
+        // If there is a sequence and `null` is being sent in for this record's primary key,
+        // set it to the next value of the sequence.
+        if (!_.isUndefined(datastore.sequences[sequenceName]) && _.isNull(newRecord[primaryKeyCol]) || newRecord[primaryKeyCol] === 0) {
+          newRecord[primaryKeyCol] = ++datastore.sequences[sequenceName];
+        }
+
         return newRecord;
       });
 
@@ -226,6 +265,10 @@ module.exports = (function sailsDisk () {
       db.insert(newRecords, function(err, newRecords) {
         if (err) {return cb(err);}
         if (query.meta && query.meta.fetch) {
+          // If the primary key col for this table isn't `_id`, exclude it from the returned records.
+          if (primaryKeyCol !== '_id') {
+            newRecords = _.map(newRecords, function(newRecord) {delete newRecord._id; return newRecord;});
+          }
           return cb(undefined, newRecords);
         }
         return cb();
@@ -250,6 +293,8 @@ module.exports = (function sailsDisk () {
       // Get the nedb for the table in question.
       var db = datastore.dbs[query.using];
 
+      var primaryKeyCol = datastore.primaryKeyCols[query.using];
+
       // Normalize the stage-3 query criteria into NeDB (really, MongoDB) criteria.
       var where = normalizeWhere(query.criteria.where);
 
@@ -265,6 +310,11 @@ module.exports = (function sailsDisk () {
         memo[colName] = 1;
         return memo;
       }, {});
+
+      // If the primary key col for this table isn't `_id`, exclude it from the returned records.
+      if (primaryKeyCol !== '_id') {
+        projection._id = 0;
+      }
 
       // Create the initial adapter query.
       var findQuery = db.find(where).sort(sort).projection(projection);
@@ -305,6 +355,9 @@ module.exports = (function sailsDisk () {
       // Get the nedb for the table in question.
       var db = datastore.dbs[query.using];
 
+      // Get the primary key column for thie table.
+      var primaryKeyCol = datastore.primaryKeyCols[query.using];
+
       // Normalize the stage-3 query criteria into NeDB (really, MongoDB) criteria.
       var where = normalizeWhere(query.criteria.where);
 
@@ -312,6 +365,11 @@ module.exports = (function sailsDisk () {
       db.update(where, {'$set': query.valuesToSet}, {multi: true, returnUpdatedDocs: true}, function(err, numAffected, updatedRecords) {
         if (err) {return cb(err);}
         if (query.meta && query.meta.fetch) {
+          // If the primary key col for this table isn't `_id`, exclude it from the returned records.
+          if (primaryKeyCol !== '_id') {
+            updatedRecords = _.map(updatedRecords, function(updatedRecord) {delete updatedRecord._id; return updatedRecord;});
+          }
+
           return cb(undefined, updatedRecords);
         }
         return cb();
@@ -469,7 +527,7 @@ module.exports = (function sailsDisk () {
      * @param  {Function}     cb            Callback
      */
     define: function define(datastoreName, tableName, definition, cb) {
-
+      console.log(definition);
       // Get a reference to the datastore.
       var datastore = datastores[datastoreName];
 
@@ -508,6 +566,20 @@ module.exports = (function sailsDisk () {
 
     },
 
+    //  ╔═╗╔═╗╔╦╗  ┌─┐┌─┐┌─┐ ┬ ┬┌─┐┌┐┌┌─┐┌─┐
+    //  ╚═╗║╣  ║   └─┐├┤ │─┼┐│ │├┤ ││││  ├┤
+    //  ╚═╝╚═╝ ╩   └─┘└─┘└─┘└└─┘└─┘┘└┘└─┘└─┘
+    setSequence: function setSequence(datastoreName, sequenceName, sequenceValue, cb) {
+
+      // Get a reference to the datastore.
+      var datastore = datastores[datastoreName];
+
+      // Set the sequence.
+      datastore.sequences[sequenceName] = sequenceValue;
+
+      return cb();
+
+    }
   };
 
 
