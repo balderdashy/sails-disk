@@ -260,8 +260,37 @@ module.exports = (function sailsDisk () {
       // Get the nedb for the table in question.
       var db = datastore.dbs[query.using];
 
-      // Insert the documents into the db.
-      db.find(normalizeCriteria(query.criteria), function(err, records) {
+      // Normalize the stage-3 query criteria into NeDB (really, MongoDB) criteria.
+      var where = normalizeCriteria(query.criteria.where);
+
+      // Transform the stage-3 query sort array into an NeDB sort dictionary.
+      var sort = _.reduce(query.criteria.sort, function(memo, sortObj) {
+        var key = _.first(_.keys(sortObj));
+        memo[key] = sortObj[key].toLowerCase() === 'asc' ? 1 : -1;
+        return memo;
+      }, {});
+
+      // Transform the stage-3 query select array into an NeDB projection dictionary.
+      var projection = _.reduce(query.criteria.select, function(memo, colName) {
+        memo[colName] = 1;
+        return memo;
+      }, {});
+
+      // Create the initial adapter query.
+      var findQuery = db.find(where).sort(sort).projection(projection);
+
+      // Add in limit if necessary.
+      if (query.criteria.limit) {
+        findQuery.limit(query.criteria.limit);
+      }
+
+      // Add in skip if necessary.
+      if (query.criteria.skip) {
+        findQuery.skip(query.criteria.skip);
+      }
+
+      // Find the documents in the db.
+      findQuery.exec(function(err, records) {
         if (err) {return cb(err);}
         return cb(undefined, records);
       });
