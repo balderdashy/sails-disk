@@ -312,20 +312,20 @@ module.exports = (function sailsDisk () {
       // Get a reference to the datastore.
       var datastore = datastores[datastoreName];
 
-      // When implementing this method, this is where you'll
-      // perform the query and return the result, e.g.:
-      //
-      // datastore.dbConnection.update(query, function(err, result) {
-      //   if (err) {return cb(err);}
-      //   return cb(undefined, result);
-      // });
-      //
-      // Note that depending on the value of `query.meta.fetch`,
-      // you may be expected to return the array of documents
-      // that were updated as the second argument to the callback.
+      // Get the nedb for the table in question.
+      var db = datastore.dbs[query.using];
 
-      // But for now, this method is just a no-op.
-      return cb();
+      // Normalize the stage-3 query criteria into NeDB (really, MongoDB) criteria.
+      var where = normalizeCriteria(query.criteria.where);
+
+      // Update the documents in the db.
+      db.update(where, {'$set': query.valuesToSet}, {multi: true, returnUpdatedDocs: true}, function(err, numAffected, updatedRecords) {
+        if (err) {return cb(err);}
+        if (query.meta && query.meta.fetch) {
+          return cb(undefined, updatedRecords);
+        }
+        return cb();
+      });
 
     },
 
