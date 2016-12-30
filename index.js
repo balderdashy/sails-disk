@@ -545,7 +545,7 @@ module.exports = (function sailsDisk () {
      * @param  {Function}     cb            Callback
      */
     define: function define(datastoreName, tableName, definition, cb) {
-      console.log(definition);
+
       // Get a reference to the datastore.
       var datastore = datastores[datastoreName];
 
