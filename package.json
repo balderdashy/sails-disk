@@ -1,8 +1,8 @@
 {
   "name": "sails-disk",
-  "version": "0.10.10",
+  "version": "1.0.0",
   "description": "Persistent local-disk adapter for Sails.js / Waterline",
-  "main": "lib/adapter.js",
+  "main": "index.js",
   "scripts": {
     "test": "rm -rf .tmp && node test/runner.js",
     "prepublish": "npm prune"
@@ -28,12 +28,10 @@
   "license": "MIT",
   "readmeFilename": "README.md",
   "dependencies": {
+    "@sailshq/lodash": "^3.10.2",
     "async": "2.0.1",
-    "fs-extra": "0.30.0",
-    "lodash": "3.10.1",
-    "waterline-criteria": "^1.0.1",
-    "waterline-cursor": "^0.0.7",
-    "waterline-errors": "0.10.1"
+    "machinepack-fs": "^8.0.2",
+    "nedb": "1.8.0"
   },
   "devDependencies": {
     "mocha": "3.0.2",
