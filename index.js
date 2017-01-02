@@ -410,7 +410,7 @@ module.exports = (function sailsDisk () {
             err.code = 'E_UNIQUE';
           }
           // If we can infer which attribute this refers to, add a `keys` array to the error.
-          // First, see if only one value in the new record matches the value that triggered the uniqueness violation.
+          // First, see if only one value in the updated data matches the value that triggered the uniqueness violation.
           if (_.filter(_.values(query.valuesToSet), function (val) {return val === err.key;}).length === 1) {
             // If so, find the key (i.e. column name) that this value was assigned to, add set that in the `keys` array.
             err.keys = [_.findKey(query.valuesToSet, function(val) {return val === err.key;})];
