@@ -93,14 +93,18 @@ module.exports = (function sailsDisk () {
       Filesystem.ensureDir({ path: datastoreConfig.dir }).exec(function(err) {
         if (err) {return cb(err);}
 
-        // Create a new NeDB instance for each model (an NeDB instance is like one MongoDB collection)
-        _.each(models, function(modelDef, modelIdentity) {
+        // Create a new NeDB instance for each model (an NeDB instance is like one MongoDB collection),
+        // and load the instance from disk.  The `loadDatabase` NeDB method is asynchronous, hence the async.each.
+        async.each(_.keys(models), function(modelIdentity, next) {
+
+          var modelDef = models[modelIdentity];
 
           datastore.primaryKeyCols[modelDef.tableName] = modelDef.definition[modelDef.primaryKey].columnName;
 
           // Create the nedb instance and save it to the `modelDbs` hash
           var filename = path.resolve(datastoreConfig.dir, modelDef.tableName + '.db');
-          var db = new nedb({ filename: filename, autoload: false });
+          var db = new nedb({ filename: filename });
+
           datastore.dbs[modelDef.tableName] = db;
 
           // Add any unique indexes and initialize any sequences.
@@ -108,8 +112,8 @@ module.exports = (function sailsDisk () {
             // If the attribute has `unique` set on it, or it's the primary key, add a unique index.
             if ((val.autoMigrations && val.autoMigrations.unique) || (attributeName === modelDef.primaryKey)) {
               if (val.autoMigrations && val.autoMigrations.unique && (!val.required && (attributeName !== modelDef.primaryKey))) {
-                throw new Error('\nIn attribute `' + attributeName + '` of model `' + modelIdentity + '`:\n' +
-                                'When using sails-disk, any attribute with `unique: true` must also have `required: true`\n');
+                return next(new Error('\nIn attribute `' + attributeName + '` of model `' + modelIdentity + '`:\n' +
+                                'When using sails-disk, any attribute with `unique: true` must also have `required: true`\n'));
               }
               db.ensureIndex({
                 fieldName: val.columnName,
@@ -121,11 +125,15 @@ module.exports = (function sailsDisk () {
             if (modelDef.primaryKey !== '_id' && val.autoMigrations && val.autoMigrations.autoIncrement && (attributeName === modelDef.primaryKey)) {
               datastore.sequences[modelDef.tableName + '_' + val.columnName + '_seq'] = 0;
             }
+
           });
 
-        });
+          // Load the database from disk.  NeDB will replay any add/remove index calls before loading the data,
+          // so making `loadDatabase` the last step ensures that we can safely migrate data without violating
+          // key constraints that have been removed.
+          db.loadDatabase(next);
 
-        return cb();
+        }, cb);
 
       });
 
@@ -199,35 +207,28 @@ module.exports = (function sailsDisk () {
       // Get the nedb for the table in question.
       var db = datastore.dbs[query.using];
 
-      // Make sure the database is loaded.
-      db.loadDatabase(function(err){
+      // Clear out any `null` _id value.
+      if (_.isNull(query.newRecord._id)) {
+        delete query.newRecord._id;
+      }
 
+      // If there is a sequence for this table, and the column name referenced in the table
+      // does not have a value set, set it to the next value of the sequence.
+      var primaryKeyCol = datastore.primaryKeyCols[query.using];
+      var sequenceName = query.using + '_' + primaryKeyCol + '_seq';
+      if (!_.isUndefined(datastore.sequences[sequenceName]) && _.isNull(query.newRecord[primaryKeyCol]) || query.newRecord[primaryKeyCol] === 0) {
+        query.newRecord[primaryKeyCol] = ++datastore.sequences[sequenceName];
+      }
+
+      // Insert the documents into the db.
+      db.insert(query.newRecord, function(err, newRecord) {
         if (err) {return cb(err);}
-
-        // Clear out any `null` _id value.
-        if (_.isNull(query.newRecord._id)) {
-          delete query.newRecord._id;
+        if (query.meta && query.meta.fetch) {
+          // If the primary key col for this table isn't `_id`, exclude it from the returned records.
+          if (primaryKeyCol !== '_id') { delete newRecord._id; }
+          return cb(undefined, newRecord);
         }
-
-        // If there is a sequence for this table, and the column name referenced in the table
-        // does not have a value set, set it to the next value of the sequence.
-        var primaryKeyCol = datastore.primaryKeyCols[query.using];
-        var sequenceName = query.using + '_' + primaryKeyCol + '_seq';
-        if (!_.isUndefined(datastore.sequences[sequenceName]) && _.isNull(query.newRecord[primaryKeyCol]) || query.newRecord[primaryKeyCol] === 0) {
-          query.newRecord[primaryKeyCol] = ++datastore.sequences[sequenceName];
-        }
-
-        // Insert the documents into the db.
-        db.insert(query.newRecord, function(err, newRecord) {
-          if (err) {return cb(err);}
-          if (query.meta && query.meta.fetch) {
-            // If the primary key col for this table isn't `_id`, exclude it from the returned records.
-            if (primaryKeyCol !== '_id') { delete newRecord._id; }
-            return cb(undefined, newRecord);
-          }
-          return cb();
-        });
-
+        return cb();
       });
 
     },
@@ -250,48 +251,41 @@ module.exports = (function sailsDisk () {
       // Get the nedb for the table in question.
       var db = datastore.dbs[query.using];
 
-      // Make sure the database is loaded.
-      db.loadDatabase(function(err){
+      // Get the primary key column for thie table.
+      var primaryKeyCol = datastore.primaryKeyCols[query.using];
 
+      // Get the possible sequence name for this table.
+      var sequenceName = query.using + '_' + primaryKeyCol + '_seq';
+
+      // Clear out any `null` _id value.
+      var newRecords = _.map(query.newRecords, function(newRecord) {
+
+        // If `null` is being sent in for this record's `_id` column, just delete it so that
+        // neDB sets it automatically.
+        if (_.isNull(newRecord._id)) {
+          delete newRecord._id;
+        }
+
+        // If there is a sequence and `null` is being sent in for this record's primary key,
+        // set it to the next value of the sequence.
+        if (!_.isUndefined(datastore.sequences[sequenceName]) && _.isNull(newRecord[primaryKeyCol]) || newRecord[primaryKeyCol] === 0) {
+          newRecord[primaryKeyCol] = ++datastore.sequences[sequenceName];
+        }
+
+        return newRecord;
+      });
+
+      // Insert the documents into the db.
+      db.insert(newRecords, function(err, newRecords) {
         if (err) {return cb(err);}
-
-        // Get the primary key column for thie table.
-        var primaryKeyCol = datastore.primaryKeyCols[query.using];
-
-        // Get the possible sequence name for this table.
-        var sequenceName = query.using + '_' + primaryKeyCol + '_seq';
-
-        // Clear out any `null` _id value.
-        var newRecords = _.map(query.newRecords, function(newRecord) {
-
-          // If `null` is being sent in for this record's `_id` column, just delete it so that
-          // neDB sets it automatically.
-          if (_.isNull(newRecord._id)) {
-            delete newRecord._id;
+        if (query.meta && query.meta.fetch) {
+          // If the primary key col for this table isn't `_id`, exclude it from the returned records.
+          if (primaryKeyCol !== '_id') {
+            newRecords = _.map(newRecords, function(newRecord) {delete newRecord._id; return newRecord;});
           }
-
-          // If there is a sequence and `null` is being sent in for this record's primary key,
-          // set it to the next value of the sequence.
-          if (!_.isUndefined(datastore.sequences[sequenceName]) && _.isNull(newRecord[primaryKeyCol]) || newRecord[primaryKeyCol] === 0) {
-            newRecord[primaryKeyCol] = ++datastore.sequences[sequenceName];
-          }
-
-          return newRecord;
-        });
-
-        // Insert the documents into the db.
-        db.insert(newRecords, function(err, newRecords) {
-          if (err) {return cb(err);}
-          if (query.meta && query.meta.fetch) {
-            // If the primary key col for this table isn't `_id`, exclude it from the returned records.
-            if (primaryKeyCol !== '_id') {
-              newRecords = _.map(newRecords, function(newRecord) {delete newRecord._id; return newRecord;});
-            }
-            return cb(undefined, newRecords);
-          }
-          return cb();
-        });
-
+          return cb(undefined, newRecords);
+        }
+        return cb();
       });
 
     },
@@ -313,52 +307,46 @@ module.exports = (function sailsDisk () {
       // Get the nedb for the table in question.
       var db = datastore.dbs[query.using];
 
-      db.loadDatabase(function(err){
+      var primaryKeyCol = datastore.primaryKeyCols[query.using];
 
+      // Normalize the stage-3 query criteria into NeDB (really, MongoDB) criteria.
+      var where = normalizeWhere(query.criteria.where);
+
+      // Transform the stage-3 query sort array into an NeDB sort dictionary.
+      var sort = _.reduce(query.criteria.sort, function(memo, sortObj) {
+        var key = _.first(_.keys(sortObj));
+        memo[key] = sortObj[key].toLowerCase() === 'asc' ? 1 : -1;
+        return memo;
+      }, {});
+
+      // Transform the stage-3 query select array into an NeDB projection dictionary.
+      var projection = _.reduce(query.criteria.select, function(memo, colName) {
+        memo[colName] = 1;
+        return memo;
+      }, {});
+
+      // If the primary key col for this table isn't `_id`, exclude it from the returned records.
+      if (primaryKeyCol !== '_id') {
+        projection._id = 0;
+      }
+
+      // Create the initial adapter query.
+      var findQuery = db.find(where).sort(sort).projection(projection);
+
+      // Add in limit if necessary.
+      if (query.criteria.limit) {
+        findQuery.limit(query.criteria.limit);
+      }
+
+      // Add in skip if necessary.
+      if (query.criteria.skip) {
+        findQuery.skip(query.criteria.skip);
+      }
+
+      // Find the documents in the db.
+      findQuery.exec(function(err, records) {
         if (err) {return cb(err);}
-
-        var primaryKeyCol = datastore.primaryKeyCols[query.using];
-
-        // Normalize the stage-3 query criteria into NeDB (really, MongoDB) criteria.
-        var where = normalizeWhere(query.criteria.where);
-
-        // Transform the stage-3 query sort array into an NeDB sort dictionary.
-        var sort = _.reduce(query.criteria.sort, function(memo, sortObj) {
-          var key = _.first(_.keys(sortObj));
-          memo[key] = sortObj[key].toLowerCase() === 'asc' ? 1 : -1;
-          return memo;
-        }, {});
-
-        // Transform the stage-3 query select array into an NeDB projection dictionary.
-        var projection = _.reduce(query.criteria.select, function(memo, colName) {
-          memo[colName] = 1;
-          return memo;
-        }, {});
-
-        // If the primary key col for this table isn't `_id`, exclude it from the returned records.
-        if (primaryKeyCol !== '_id') {
-          projection._id = 0;
-        }
-
-        // Create the initial adapter query.
-        var findQuery = db.find(where).sort(sort).projection(projection);
-
-        // Add in limit if necessary.
-        if (query.criteria.limit) {
-          findQuery.limit(query.criteria.limit);
-        }
-
-        // Add in skip if necessary.
-        if (query.criteria.skip) {
-          findQuery.skip(query.criteria.skip);
-        }
-
-        // Find the documents in the db.
-        findQuery.exec(function(err, records) {
-          if (err) {return cb(err);}
-          return cb(undefined, records);
-        });
-
+        return cb(undefined, records);
       });
 
     },
@@ -381,30 +369,24 @@ module.exports = (function sailsDisk () {
       // Get the nedb for the table in question.
       var db = datastore.dbs[query.using];
 
-      db.loadDatabase(function(err){
+      // Get the primary key column for thie table.
+      var primaryKeyCol = datastore.primaryKeyCols[query.using];
 
+      // Normalize the stage-3 query criteria into NeDB (really, MongoDB) criteria.
+      var where = normalizeWhere(query.criteria.where);
+
+      // Update the documents in the db.
+      db.update(where, {'$set': query.valuesToSet}, {multi: true, returnUpdatedDocs: true}, function(err, numAffected, updatedRecords) {
         if (err) {return cb(err);}
-
-        // Get the primary key column for thie table.
-        var primaryKeyCol = datastore.primaryKeyCols[query.using];
-
-        // Normalize the stage-3 query criteria into NeDB (really, MongoDB) criteria.
-        var where = normalizeWhere(query.criteria.where);
-
-        // Update the documents in the db.
-        db.update(where, {'$set': query.valuesToSet}, {multi: true, returnUpdatedDocs: true}, function(err, numAffected, updatedRecords) {
-          if (err) {return cb(err);}
-          if (query.meta && query.meta.fetch) {
-            // If the primary key col for this table isn't `_id`, exclude it from the returned records.
-            if (primaryKeyCol !== '_id') {
-              updatedRecords = _.map(updatedRecords, function(updatedRecord) {delete updatedRecord._id; return updatedRecord;});
-            }
-
-            return cb(undefined, updatedRecords);
+        if (query.meta && query.meta.fetch) {
+          // If the primary key col for this table isn't `_id`, exclude it from the returned records.
+          if (primaryKeyCol !== '_id') {
+            updatedRecords = _.map(updatedRecords, function(updatedRecord) {delete updatedRecord._id; return updatedRecord;});
           }
-          return cb();
-        });
 
+          return cb(undefined, updatedRecords);
+        }
+        return cb();
       });
 
     },
@@ -427,39 +409,33 @@ module.exports = (function sailsDisk () {
       // Get the nedb for the table in question.
       var db = datastore.dbs[query.using];
 
-      db.loadDatabase(function(err){
+      // If `fetch` is true, find the records BEFORE we remove them so that we can
+      // send them back to the caller.
+      (function maybeFetchRecords(done) {
 
-        if (err) {return cb(err);}
-
-        // If `fetch` is true, find the records BEFORE we remove them so that we can
-        // send them back to the caller.
-        (function maybeFetchRecords(done) {
-
-          if (query.meta && query.meta.fetch) {
-            adapter.find(datastoreName, _.cloneDeep(query), function(err, records) {
-              if (err) { return cb(err); }
-              return done(records);
-            });
-          }
-          else {
-            return done();
-          }
-        })
-        // Now, destroy the records.
-        (function afterMaybeFetchingRecords(records) {
-
-          // Normalize the stage-3 query criteria into NeDB (really, MongoDB) criteria.
-          var where = normalizeWhere(query.criteria.where);
-
-          // Remove the documents from the db.
-          db.remove(where, {multi: true}, function(err, numAffected) {
-
-            // If `fetch` was true, `records` will hold the records we just destroyed.
-            return cb(undefined, records);
-
+        if (query.meta && query.meta.fetch) {
+          adapter.find(datastoreName, _.cloneDeep(query), function(err, records) {
+            if (err) { return cb(err); }
+            return done(records);
           });
-        });
+        }
+        else {
+          return done();
+        }
+      })
+      // Now, destroy the records.
+      (function afterMaybeFetchingRecords(records) {
 
+        // Normalize the stage-3 query criteria into NeDB (really, MongoDB) criteria.
+        var where = normalizeWhere(query.criteria.where);
+
+        // Remove the documents from the db.
+        db.remove(where, {multi: true}, function(err, numAffected) {
+
+          // If `fetch` was true, `records` will hold the records we just destroyed.
+          return cb(undefined, records);
+
+        });
       });
 
     },
@@ -531,17 +507,11 @@ module.exports = (function sailsDisk () {
       // Get the nedb for the table in question.
       var db = datastore.dbs[query.using];
 
-      db.loadDatabase(function(err){
+      // Normalize the stage-3 query criteria into NeDB (really, MongoDB) criteria.
+      var where = normalizeWhere(query.criteria.where);
 
-        if (err) {return cb(err);}
-
-        // Normalize the stage-3 query criteria into NeDB (really, MongoDB) criteria.
-        var where = normalizeWhere(query.criteria.where);
-
-        // Count the documents into the db.
-        db.count(where, cb);
-
-      });
+      // Count the documents into the db.
+      db.count(where, cb);
 
     },
 
@@ -577,9 +547,7 @@ module.exports = (function sailsDisk () {
       // Create the datastore file.
       var filename = path.resolve(datastore.config.dir, tableName + '.db');
 
-      // Don't autoload the database, as this can cause race conditions with automigrations.
-      // Instead, just call `loadDatabase` in adapter methods (it's idempotent).
-      var db = new nedb({ filename: filename, autoload: false });
+      var db = new nedb({ filename: filename });
       datastore.dbs[tableName] = db;
 
       // Re-create any unique indexes.
@@ -593,7 +561,7 @@ module.exports = (function sailsDisk () {
         }
       });
 
-      return cb();
+      return db.loadDatabase(cb);
 
     },
 
