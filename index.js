@@ -109,6 +109,13 @@ module.exports = (function sailsDisk () {
 
           // Add any unique indexes and initialize any sequences.
           _.each(modelDef.definition, function(val, attributeName) {
+
+            // If the attribute has a columnName of `_id`, bail.  That column name is reserved by sails-disk.
+            if (val.columnName === '_id') {
+              return next(new Error('\nIn attribute `' + attributeName + '` of model `' + modelIdentity + '`:\n' +
+                              'When using sails-disk, the column name `_id` is reserved.\n'));
+            }
+
             // If the attribute has `unique` set on it, or it's the primary key, add a unique index.
             if ((val.autoMigrations && val.autoMigrations.unique) || (attributeName === modelDef.primaryKey)) {
               if (val.autoMigrations && val.autoMigrations.unique && (!val.required && (attributeName !== modelDef.primaryKey))) {
