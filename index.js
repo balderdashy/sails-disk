@@ -33,6 +33,7 @@ module.exports = (function sailsDisk () {
 
     // Default configuration for connections
     defaults: {
+      schema: false,
       dir: '.tmp/localDiskDb'
     },
 
