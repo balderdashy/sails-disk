@@ -234,7 +234,18 @@ module.exports = (function sailsDisk () {
 
       // Insert the documents into the db.
       db.insert(query.newRecord, function(err, newRecord) {
-        if (err) {return cb(err);}
+        if (err) {
+          if (err.errorType === 'uniqueViolated') {
+            err.code = 'E_UNIQUE';
+            // If we can infer which attribute this refers to, add a `keys` array to the error.
+            // First, see if only one value in the new record matches the value that triggered the uniqueness violation.
+            if (_.filter(_.values(query.newRecord), function (val) {return val === err.key;}).length === 1) {
+              // If so, find the key (i.e. column name) that this value was assigned to, add set that in the `keys` array.
+              err.keys = [_.findKey(query.newRecord, function(val) {return val === err.key;})];
+            }
+          }
+          return cb(err);
+        }
         if (query.meta && query.meta.fetch) {
           // If the primary key col for this table isn't `_id`, exclude it from the returned records.
           if (primaryKeyCol !== '_id') { delete newRecord._id; }
@@ -289,7 +300,12 @@ module.exports = (function sailsDisk () {
 
       // Insert the documents into the db.
       db.insert(newRecords, function(err, newRecords) {
-        if (err) {return cb(err);}
+        if (err) {
+          if (err.errorType === 'uniqueViolated') {
+            err.code = 'E_UNIQUE';
+          }
+          return cb(err);
+        }
         if (query.meta && query.meta.fetch) {
           // If the primary key col for this table isn't `_id`, exclude it from the returned records.
           if (primaryKeyCol !== '_id') {
@@ -389,7 +405,18 @@ module.exports = (function sailsDisk () {
 
       // Update the documents in the db.
       db.update(where, {'$set': query.valuesToSet}, {multi: true, returnUpdatedDocs: true}, function(err, numAffected, updatedRecords) {
-        if (err) {return cb(err);}
+        if (err) {
+          if (err.errorType === 'uniqueViolated') {
+            err.code = 'E_UNIQUE';
+          }
+          // If we can infer which attribute this refers to, add a `keys` array to the error.
+          // First, see if only one value in the new record matches the value that triggered the uniqueness violation.
+          if (_.filter(_.values(query.valuesToSet), function (val) {return val === err.key;}).length === 1) {
+            // If so, find the key (i.e. column name) that this value was assigned to, add set that in the `keys` array.
+            err.keys = [_.findKey(query.valuesToSet, function(val) {return val === err.key;})];
+          }
+          return cb(err);
+        }
         if (query.meta && query.meta.fetch) {
           // If the primary key col for this table isn't `_id`, exclude it from the returned records.
           if (primaryKeyCol !== '_id') {
