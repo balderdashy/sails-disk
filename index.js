@@ -120,6 +120,11 @@ module.exports = (function sailsDisk () {
                 unique: true
               });
             }
+            // Otherwise, remove any index that may have been added previously.
+            else {
+              db.removeIndex(val.columnName);
+            }
+
             // If the attribute has `autoIncrement` on it, and it's the primary key,
             // and the primary key ISN'T `_id`, initialize a sequence for it.
             if (modelDef.primaryKey !== '_id' && val.autoMigrations && val.autoMigrations.autoIncrement && (attributeName === modelDef.primaryKey)) {
