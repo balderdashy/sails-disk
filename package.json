@@ -1,6 +1,6 @@
 {
   "name": "sails-disk",
-  "version": "0.10.10",
+  "version": "0.11.0",
   "description": "Persistent local-disk adapter for Sails.js / Waterline",
   "main": "lib/adapter.js",
   "scripts": {
@@ -23,6 +23,9 @@
   "contributors": [
     {
       "name": "Cody Stoltman"
+    },
+    {
+      "name": "Michael Smyers"
     }
   ],
   "license": "MIT",
