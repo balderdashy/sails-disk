@@ -236,14 +236,16 @@ module.exports = (function sailsDisk () {
       db.insert(query.newRecord, function(err, newRecord) {
         if (err) {
           if (err.errorType === 'uniqueViolated') {
-            err.code = 'E_UNIQUE';
+            err.footprint = {
+              identity: 'notUnique'
+            };
             // If we can infer which attribute this refers to, add a `keys` array to the error.
             // First, see if only one value in the new record matches the value that triggered the uniqueness violation.
             if (_.filter(_.values(query.newRecord), function (val) {return val === err.key;}).length === 1) {
               // If so, find the key (i.e. column name) that this value was assigned to, add set that in the `keys` array.
-              err.keys = [_.findKey(query.newRecord, function(val) {return val === err.key;})];
+              err.footprint.keys = [_.findKey(query.newRecord, function(val) {return val === err.key;})];
             } else {
-              err.keys = [];
+              err.footprint.keys = [];
             }
           }
           return cb(err);
@@ -304,8 +306,10 @@ module.exports = (function sailsDisk () {
       db.insert(newRecords, function(err, newRecords) {
         if (err) {
           if (err.errorType === 'uniqueViolated') {
-            err.code = 'E_UNIQUE';
-            err.keys = [];
+            err.footprint = {
+              identity: 'notUnique',
+              keys: []
+            };
           }
           return cb(err);
         }
@@ -410,15 +414,17 @@ module.exports = (function sailsDisk () {
       db.update(where, {'$set': query.valuesToSet}, {multi: true, returnUpdatedDocs: true}, function(err, numAffected, updatedRecords) {
         if (err) {
           if (err.errorType === 'uniqueViolated') {
-            err.code = 'E_UNIQUE';
+            err.footprint = {
+              identity: 'notUnique'
+            };
           }
           // If we can infer which attribute this refers to, add a `keys` array to the error.
           // First, see if only one value in the updated data matches the value that triggered the uniqueness violation.
           if (_.filter(_.values(query.valuesToSet), function (val) {return val === err.key;}).length === 1) {
             // If so, find the key (i.e. column name) that this value was assigned to, add set that in the `keys` array.
-            err.keys = [_.findKey(query.valuesToSet, function(val) {return val === err.key;})];
+            err.footprint.keys = [_.findKey(query.valuesToSet, function(val) {return val === err.key;})];
           } else {
-            err.keys = [];
+            err.footprint.keys = [];
           }
           return cb(err);
         }
