@@ -38,7 +38,7 @@
     "waterline-adapter-tests": "^0.12.1"
   },
   "waterlineAdapter": {
-    "waterlineVersion": "^0.12.0",
+    "waterlineVersion": "^0.13.0",
     "interfaces": [
       "semantic",
       "queryable",
