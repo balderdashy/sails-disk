@@ -242,6 +242,8 @@ module.exports = (function sailsDisk () {
             if (_.filter(_.values(query.newRecord), function (val) {return val === err.key;}).length === 1) {
               // If so, find the key (i.e. column name) that this value was assigned to, add set that in the `keys` array.
               err.keys = [_.findKey(query.newRecord, function(val) {return val === err.key;})];
+            } else {
+              err.keys = [];
             }
           }
           return cb(err);
@@ -303,6 +305,7 @@ module.exports = (function sailsDisk () {
         if (err) {
           if (err.errorType === 'uniqueViolated') {
             err.code = 'E_UNIQUE';
+            err.keys = [];
           }
           return cb(err);
         }
@@ -414,6 +417,8 @@ module.exports = (function sailsDisk () {
           if (_.filter(_.values(query.valuesToSet), function (val) {return val === err.key;}).length === 1) {
             // If so, find the key (i.e. column name) that this value was assigned to, add set that in the `keys` array.
             err.keys = [_.findKey(query.valuesToSet, function(val) {return val === err.key;})];
+          } else {
+            err.keys = [];
           }
           return cb(err);
         }
