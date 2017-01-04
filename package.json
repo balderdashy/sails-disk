@@ -35,7 +35,7 @@
   },
   "devDependencies": {
     "mocha": "3.0.2",
-    "waterline-adapter-tests": "^0.12.1"
+    "waterline-adapter-tests": "^1.0.0-2"
   },
   "waterlineAdapter": {
     "waterlineVersion": "^0.13.0",
