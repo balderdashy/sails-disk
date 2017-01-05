@@ -97,9 +97,17 @@ module.exports = (function sailsDisk () {
         // and load the instance from disk.  The `loadDatabase` NeDB method is asynchronous, hence the async.each.
         async.each(_.keys(models), function(modelIdentity, next) {
 
+          // Get the model definition.
           var modelDef = models[modelIdentity];
 
-          datastore.primaryKeyCols[modelDef.tableName] = modelDef.definition[modelDef.primaryKey].columnName;
+          // Get the model's primary key column.
+          var primaryKeyCol = modelDef.definition[modelDef.primaryKey].columnName;
+
+          // Store the primary key column in the datastore's primary key columns hash.
+          datastore.primaryKeyCols[modelDef.tableName] = primaryKeyCol;
+
+          // Declare a var to hold the table's sequence name (if any).
+          var sequenceName = null;
 
           // Create the nedb instance and save it to the `modelDbs` hash
           var filename = path.resolve(datastoreConfig.dir, modelDef.tableName + '.db');
@@ -135,7 +143,8 @@ module.exports = (function sailsDisk () {
             // If the attribute has `autoIncrement` on it, and it's the primary key,
             // and the primary key ISN'T `_id`, initialize a sequence for it.
             if (modelDef.primaryKey !== '_id' && val.autoMigrations && val.autoMigrations.autoIncrement && (attributeName === modelDef.primaryKey)) {
-              datastore.sequences[modelDef.tableName + '_' + val.columnName + '_seq'] = 0;
+              sequenceName = modelDef.tableName + '_' + val.columnName + '_seq';
+              datastore.sequences[sequenceName] = 0;
             }
 
           });
@@ -143,7 +152,26 @@ module.exports = (function sailsDisk () {
           // Load the database from disk.  NeDB will replay any add/remove index calls before loading the data,
           // so making `loadDatabase` the last step ensures that we can safely migrate data without violating
           // key constraints that have been removed.
-          db.loadDatabase(next);
+          db.loadDatabase(function(err) {
+            if (err) { return next(err); }
+            // If there's a sequence for this table, then load the records in reverse PK order
+            // to get the last sequence value.
+            if (sequenceName) {
+              var sortObj = {};
+              sortObj[primaryKeyCol] = -1;
+              // Find the record with the highest PK value.
+              db.find({}).sort(sortObj).limit(1).exec(function(err, records) {
+                if (err) { return next(err); }
+                // No records yet?  Leave the sequence at zero.
+                if (records.length === 0) { return next(err); }
+                // Otherwise set the sequence to the PK value.
+                datastore.sequences[sequenceName] = records[0][primaryKeyCol];
+                return next();
+              });
+              return;
+            }
+            return next();
+          });
 
         }, cb);
 
