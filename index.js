@@ -205,11 +205,6 @@ module.exports = (function sailsDisk () {
       // Teardown each datastore
       _.each(datastoreIdentities, function teardownDatastore(datastoreIdentity) {
 
-        // Remove the modelDbs entries for each table that uses this datastore.
-        _.each(datastores[datastoreIdentity].tables, function(tableName) {
-          delete modelDbs[tableName];
-        });
-
         // Remove the datastore entry.
         delete datastores[datastoreIdentity];
 
