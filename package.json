@@ -47,7 +47,8 @@
     ],
     "features": [
       "cross-adapter",
-      "autoIncrement"
+      "autoIncrement",
+      "unique"
     ]
   }
 }
