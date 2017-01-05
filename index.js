@@ -100,6 +100,13 @@ module.exports = (function sailsDisk () {
           // Get the model definition.
           var modelDef = models[modelIdentity];
 
+          var primaryKeyAttr = modelDef.definition[modelDef.primaryKey];
+
+          // Ensure that the model's primary key has either `autoIncrement` or `required`
+          if (primaryKeyAttr.required !== true && (!primaryKeyAttr.autoMigrations || primaryKeyAttr.autoMigrations.autoIncrement !== true)) {
+            return next(new Error('In model `' + modelIdentity + '`, primary key `' + modelDef.primaryKey + '` must have either `required` or `autoIncrement` set.'));
+          }
+
           // Get the model's primary key column.
           var primaryKeyCol = modelDef.definition[modelDef.primaryKey].columnName;
 
