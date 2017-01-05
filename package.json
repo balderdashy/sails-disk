@@ -46,7 +46,8 @@
       "migratable"
     ],
     "features": [
-      "cross-adapter"
+      "cross-adapter",
+      "autoIncrement"
     ]
   }
 }
