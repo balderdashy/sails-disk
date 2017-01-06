@@ -89,103 +89,115 @@ module.exports = (function sailsDisk () {
       // Add the datastore to the `datastores` dictionary.
       datastores[identity] = datastore;
 
-      // Ensure that the given folder exists
-      Filesystem.ensureDir({ path: datastoreConfig.dir }).exec(function(err) {
-        if (err) {return cb(err);}
+      (function diskOrMemory (proceed) {
 
-        // Create a new NeDB instance for each model (an NeDB instance is like one MongoDB collection),
-        // and load the instance from disk.  The `loadDatabase` NeDB method is asynchronous, hence the async.each.
-        async.each(_.keys(models), function(modelIdentity, next) {
+        if (datastoreConfig.inMemoryOnly === true) {
+          return proceed();
+        }
+        // Ensure that the given folder exists
+        Filesystem.ensureDir({ path: datastoreConfig.dir }).exec(function(err) {
+          if (err) {return cb(err);}
+          return proceed();
+        });
 
-          // Get the model definition.
-          var modelDef = models[modelIdentity];
+      }) (function proceed() {
 
-          var primaryKeyAttr = modelDef.definition[modelDef.primaryKey];
+          // Create a new NeDB instance for each model (an NeDB instance is like one MongoDB collection),
+          // and load the instance from disk.  The `loadDatabase` NeDB method is asynchronous, hence the async.each.
+          async.each(_.keys(models), function(modelIdentity, next) {
 
-          // Ensure that the model's primary key has either `autoIncrement` or `required`
-          if (primaryKeyAttr.required !== true && (!primaryKeyAttr.autoMigrations || primaryKeyAttr.autoMigrations.autoIncrement !== true)) {
-            return next(new Error('In model `' + modelIdentity + '`, primary key `' + modelDef.primaryKey + '` must have either `required` or `autoIncrement` set.'));
-          }
+            // Get the model definition.
+            var modelDef = models[modelIdentity];
 
-          // Get the model's primary key column.
-          var primaryKeyCol = modelDef.definition[modelDef.primaryKey].columnName;
+            var primaryKeyAttr = modelDef.definition[modelDef.primaryKey];
 
-          // Store the primary key column in the datastore's primary key columns hash.
-          datastore.primaryKeyCols[modelDef.tableName] = primaryKeyCol;
-
-          // Declare a var to hold the table's sequence name (if any).
-          var sequenceName = null;
-
-          // Create the nedb instance and save it to the `modelDbs` hash
-          var filename = path.resolve(datastoreConfig.dir, modelDef.tableName + '.db');
-          var db = new nedb({ filename: filename });
-
-          datastore.dbs[modelDef.tableName] = db;
-
-          // Add any unique indexes and initialize any sequences.
-          _.each(modelDef.definition, function(val, attributeName) {
-
-            // If the attribute has a columnName of `_id`, bail.  That column name is reserved by sails-disk.
-            if (val.columnName === '_id') {
-              return next(new Error('\nIn attribute `' + attributeName + '` of model `' + modelIdentity + '`:\n' +
-                              'When using sails-disk, the column name `_id` is reserved.\n'));
+            // Ensure that the model's primary key has either `autoIncrement` or `required`
+            if (primaryKeyAttr.required !== true && (!primaryKeyAttr.autoMigrations || primaryKeyAttr.autoMigrations.autoIncrement !== true)) {
+              return next(new Error('In model `' + modelIdentity + '`, primary key `' + modelDef.primaryKey + '` must have either `required` or `autoIncrement` set.'));
             }
 
-            // If the attribute has `unique` set on it, or it's the primary key, add a unique index.
-            if ((val.autoMigrations && val.autoMigrations.unique) || (attributeName === modelDef.primaryKey)) {
-              if (val.autoMigrations && val.autoMigrations.unique && (!val.required && (attributeName !== modelDef.primaryKey))) {
+            // Get the model's primary key column.
+            var primaryKeyCol = modelDef.definition[modelDef.primaryKey].columnName;
+
+            // Store the primary key column in the datastore's primary key columns hash.
+            datastore.primaryKeyCols[modelDef.tableName] = primaryKeyCol;
+
+            // Declare a var to hold the table's sequence name (if any).
+            var sequenceName = null;
+
+            // Create the nedb instance and save it to the `modelDbs` hash
+            var nedbConfig;
+            if (datastoreConfig.inMemoryOnly) {
+              nedbConfig = { inMemoryOnly: true };
+            } else {
+              nedbConfig = { filename: path.resolve(datastoreConfig.dir, modelDef.tableName + '.db') };
+            }
+            var db = new nedb(nedbConfig);
+
+            datastore.dbs[modelDef.tableName] = db;
+
+            // Add any unique indexes and initialize any sequences.
+            _.each(modelDef.definition, function(val, attributeName) {
+
+              // If the attribute has a columnName of `_id`, bail.  That column name is reserved by sails-disk.
+              if (val.columnName === '_id') {
                 return next(new Error('\nIn attribute `' + attributeName + '` of model `' + modelIdentity + '`:\n' +
-                                'When using sails-disk, any attribute with `unique: true` must also have `required: true`\n'));
+                                'When using sails-disk, the column name `_id` is reserved.\n'));
               }
-              db.ensureIndex({
-                fieldName: val.columnName,
-                unique: true
-              });
-            }
-            // Otherwise, remove any index that may have been added previously.
-            else {
-              db.removeIndex(val.columnName);
-            }
 
-            // If the attribute has `autoIncrement` on it, and it's the primary key,
-            // and the primary key ISN'T `_id`, initialize a sequence for it.
-            if (modelDef.primaryKey !== '_id' && val.autoMigrations && val.autoMigrations.autoIncrement && (attributeName === modelDef.primaryKey)) {
-              sequenceName = modelDef.tableName + '_' + val.columnName + '_seq';
-              datastore.sequences[sequenceName] = 0;
-            }
+              // If the attribute has `unique` set on it, or it's the primary key, add a unique index.
+              if ((val.autoMigrations && val.autoMigrations.unique) || (attributeName === modelDef.primaryKey)) {
+                if (val.autoMigrations && val.autoMigrations.unique && (!val.required && (attributeName !== modelDef.primaryKey))) {
+                  return next(new Error('\nIn attribute `' + attributeName + '` of model `' + modelIdentity + '`:\n' +
+                                  'When using sails-disk, any attribute with `unique: true` must also have `required: true`\n'));
+                }
+                db.ensureIndex({
+                  fieldName: val.columnName,
+                  unique: true
+                });
+              }
+              // Otherwise, remove any index that may have been added previously.
+              else {
+                db.removeIndex(val.columnName);
+              }
 
-          });
+              // If the attribute has `autoIncrement` on it, and it's the primary key,
+              // and the primary key ISN'T `_id`, initialize a sequence for it.
+              if (modelDef.primaryKey !== '_id' && val.autoMigrations && val.autoMigrations.autoIncrement && (attributeName === modelDef.primaryKey)) {
+                sequenceName = modelDef.tableName + '_' + val.columnName + '_seq';
+                datastore.sequences[sequenceName] = 0;
+              }
 
-          // Load the database from disk.  NeDB will replay any add/remove index calls before loading the data,
-          // so making `loadDatabase` the last step ensures that we can safely migrate data without violating
-          // key constraints that have been removed.
-          db.loadDatabase(function(err) {
-            if (err) { return next(err); }
-            // If there's a sequence for this table, then load the records in reverse PK order
-            // to get the last sequence value.
-            if (sequenceName) {
-              var sortObj = {};
-              sortObj[primaryKeyCol] = -1;
-              // Find the record with the highest PK value.
-              db.find({}).sort(sortObj).limit(1).exec(function(err, records) {
-                if (err) { return next(err); }
-                // No records yet?  Leave the sequence at zero.
-                if (records.length === 0) { return next(err); }
-                // Otherwise set the sequence to the PK value.
-                datastore.sequences[sequenceName] = records[0][primaryKeyCol];
-                return next();
-              });
-              return;
-            }
-            return next();
-          });
+            });
 
-        }, cb);
+            // Load the database from disk.  NeDB will replay any add/remove index calls before loading the data,
+            // so making `loadDatabase` the last step ensures that we can safely migrate data without violating
+            // key constraints that have been removed.
+            db.loadDatabase(function(err) {
+              if (err) { return next(err); }
+              // If there's a sequence for this table, then load the records in reverse PK order
+              // to get the last sequence value.
+              if (sequenceName) {
+                var sortObj = {};
+                sortObj[primaryKeyCol] = -1;
+                // Find the record with the highest PK value.
+                db.find({}).sort(sortObj).limit(1).exec(function(err, records) {
+                  if (err) { return next(err); }
+                  // No records yet?  Leave the sequence at zero.
+                  if (records.length === 0) { return next(err); }
+                  // Otherwise set the sequence to the PK value.
+                  datastore.sequences[sequenceName] = records[0][primaryKeyCol];
+                  return next();
+                });
+                return;
+              }
+              return next();
+            });
+
+          }, cb);
 
       });
-
     },
-
 
     //  ╔╦╗╔═╗╔═╗╦═╗╔╦╗╔═╗╦ ╦╔╗╔  ┌─┐┌─┐┌┐┌┌┐┌┌─┐┌─┐┌┬┐┬┌─┐┌┐┌
     //   ║ ║╣ ╠═╣╠╦╝ ║║║ ║║║║║║║  │  │ │││││││├┤ │   │ ││ ││││
@@ -366,6 +378,7 @@ module.exports = (function sailsDisk () {
      * @param  {Function}     cb            Callback
      */
     find: function find(datastoreName, query, cb) {
+
       // Get a reference to the datastore.
       var datastore = datastores[datastoreName];
 
@@ -624,10 +637,15 @@ module.exports = (function sailsDisk () {
       // Get a reference to the datastore.
       var datastore = datastores[datastoreName];
 
-      // Create the datastore file.
-      var filename = path.resolve(datastore.config.dir, tableName + '.db');
+      var db;
 
-      var db = new nedb({ filename: filename });
+      // If memory only, create a new in-memory nedb for the collection.
+      if (datastore.config.inMemoryOnly === true) {
+        db = new nedb({ inMemoryOnly: true });
+      } else {
+        db = new nedb({ filename: path.resolve(datastore.config.dir, tableName + '.db') });
+      }
+
       datastore.dbs[tableName] = db;
 
       // Re-create any unique indexes.
@@ -661,6 +679,12 @@ module.exports = (function sailsDisk () {
 
       // Get a reference to the datastore.
       var datastore = datastores[datastoreName];
+
+      // If memory only, just remove the reference to the nedb for the collection.
+      if (datastore.config.inMemoryOnly === true) {
+        delete datastore.dbs[tableName];
+        return cb();
+      }
 
       // Delete the datastore file.
       var filename = path.resolve(datastore.config.dir, tableName + '.db');
