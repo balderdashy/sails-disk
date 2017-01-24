@@ -136,39 +136,43 @@ module.exports = (function sailsDisk () {
 
             datastore.dbs[modelDef.tableName] = db;
 
-            // Add any unique indexes and initialize any sequences.
-            _.each(modelDef.definition, function(val, attributeName) {
+            try {
+              // Add any unique indexes and initialize any sequences.
+              _.each(modelDef.definition, function(val, attributeName) {
 
-              // If the attribute has a columnName of `_id`, bail.  That column name is reserved by sails-disk.
-              if (val.columnName === '_id') {
-                return next(new Error('\nIn attribute `' + attributeName + '` of model `' + modelIdentity + '`:\n' +
-                                'When using sails-disk, the column name `_id` is reserved.\n'));
-              }
-
-              // If the attribute has `unique` set on it, or it's the primary key, add a unique index.
-              if ((val.autoMigrations && val.autoMigrations.unique) || (attributeName === modelDef.primaryKey)) {
-                if (val.autoMigrations && val.autoMigrations.unique && (!val.required && (attributeName !== modelDef.primaryKey))) {
-                  return next(new Error('\nIn attribute `' + attributeName + '` of model `' + modelIdentity + '`:\n' +
-                                  'When using sails-disk, any attribute with `unique: true` must also have `required: true`\n'));
+                // If the attribute has a columnName of `_id`, bail.  That column name is reserved by sails-disk.
+                if (val.columnName === '_id') {
+                  throw new Error('\nIn attribute `' + attributeName + '` of model `' + modelIdentity + '`:\n' +
+                                  'When using sails-disk, the column name `_id` is reserved.\n');
                 }
-                db.ensureIndex({
-                  fieldName: val.columnName,
-                  unique: true
-                });
-              }
-              // Otherwise, remove any index that may have been added previously.
-              else {
-                db.removeIndex(val.columnName);
-              }
 
-              // If the attribute has `autoIncrement` on it, and it's the primary key,
-              // and the primary key ISN'T `_id`, initialize a sequence for it.
-              if (modelDef.primaryKey !== '_id' && val.autoMigrations && val.autoMigrations.autoIncrement && (attributeName === modelDef.primaryKey)) {
-                sequenceName = modelDef.tableName + '_' + val.columnName + '_seq';
-                datastore.sequences[sequenceName] = 0;
-              }
+                // If the attribute has `unique` set on it, or it's the primary key, add a unique index.
+                if ((val.autoMigrations && val.autoMigrations.unique) || (attributeName === modelDef.primaryKey)) {
+                  if (val.autoMigrations && val.autoMigrations.unique && (!val.required && (attributeName !== modelDef.primaryKey))) {
+                    throw new Error('\nIn attribute `' + attributeName + '` of model `' + modelIdentity + '`:\n' +
+                                    'When using sails-disk, any attribute with `unique: true` must also have `required: true`\n');
+                  }
+                  db.ensureIndex({
+                    fieldName: val.columnName,
+                    unique: true
+                  });
+                }
+                // Otherwise, remove any index that may have been added previously.
+                else {
+                  db.removeIndex(val.columnName);
+                }
 
-            });
+                // If the attribute has `autoIncrement` on it, and it's the primary key,
+                // and the primary key ISN'T `_id`, initialize a sequence for it.
+                if (modelDef.primaryKey !== '_id' && val.autoMigrations && val.autoMigrations.autoIncrement && (attributeName === modelDef.primaryKey)) {
+                  sequenceName = modelDef.tableName + '_' + val.columnName + '_seq';
+                  datastore.sequences[sequenceName] = 0;
+                }
+
+              });
+            } catch (e) {
+              return next(e);
+            }
 
             // Load the database from disk.  NeDB will replay any add/remove index calls before loading the data,
             // so making `loadDatabase` the last step ensures that we can safely migrate data without violating
