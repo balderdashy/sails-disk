@@ -478,7 +478,7 @@ module.exports = (function sailsDisk () {
             err.footprint.keys = [];
           }
           return cb(err);
-        }
+        }//-•
         if (query.meta && query.meta.fetch) {
           // If the primary key col for this table isn't `_id`, exclude it from the returned records.
           if (primaryKeyCol !== '_id') {
@@ -486,7 +486,7 @@ module.exports = (function sailsDisk () {
           }
 
           return cb(undefined, updatedRecords);
-        }
+        }//-•
         return cb();
       });
 
@@ -533,6 +533,7 @@ module.exports = (function sailsDisk () {
 
         // Remove the documents from the db.
         db.remove(where, {multi: true}, function(err /*, numAffected */) {
+          if (err) { return cb(err); }
 
           // If `fetch` was true, `records` will hold the records we just destroyed.
           // (otherwise, it will be `undefined`)
