@@ -1,6 +1,6 @@
 {
   "name": "sails-disk",
-  "version": "1.0.0-5",
+  "version": "1.0.0-6",
   "description": "Persistent local-disk (and/or memory) adapter for Sails.js / Waterline.",
   "main": "index.js",
   "scripts": {
@@ -27,9 +27,15 @@
   ],
   "author": "The Sails Company",
   "contributors": [
-    { "name": "Scott Gress" },
-    { "name": "Cody Stoltman" },
-    { "name": "Mike McNeil" }
+    {
+      "name": "Scott Gress"
+    },
+    {
+      "name": "Cody Stoltman"
+    },
+    {
+      "name": "Mike McNeil"
+    }
   ],
   "license": "MIT",
   "dependencies": {
