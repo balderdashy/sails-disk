@@ -37,6 +37,9 @@ module.exports = (function sailsDisk () {
       dir: '.tmp/localDiskDb'
     },
 
+    // Expose the static neDB client library as `nedb`
+    nedb: nedb,
+
     //  ╔═╗═╗ ╦╔═╗╔═╗╔═╗╔═╗  ┌─┐┬─┐┬┬  ┬┌─┐┌┬┐┌─┐
     //  ║╣ ╔╩╦╝╠═╝║ ║╚═╗║╣   ├─┘├┬┘│└┐┌┘├─┤ │ ├┤
     //  ╚═╝╩ ╚═╩  ╚═╝╚═╝╚═╝  ┴  ┴└─┴ └┘ ┴ ┴ ┴ └─┘
@@ -200,7 +203,7 @@ module.exports = (function sailsDisk () {
           });
 
         }, cb);
-        
+
       });
     },
 
