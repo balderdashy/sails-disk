@@ -14,16 +14,15 @@
  */
 
 var util = require('util');
-var mocha = require('mocha');
 var TestRunner = require('waterline-adapter-tests');
 var Adapter = require('../');
 
 
 
 // Grab targeted interfaces from this adapter's `package.json` file:
-var package = {},
-  interfaces = [],
-  features = [];
+var package = {};
+var interfaces = [];
+var features = [];
 try {
   package = require('../package.json');
   interfaces = package.waterlineAdapter.interfaces;
