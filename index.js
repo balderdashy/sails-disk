@@ -92,7 +92,7 @@ module.exports = (function sailsDisk () {
       // Add the datastore to the `datastores` dictionary.
       datastores[identity] = datastore;
 
-      (function diskOrMemory (proceed) {
+      (function determineDiskOrMemory (proceed) {
 
         if (datastoreConfig.inMemoryOnly === true) {
           return proceed();
@@ -103,7 +103,7 @@ module.exports = (function sailsDisk () {
           return proceed();
         });
 
-      }) (function proceed(err) {
+      }) (function (err) {
         if (err) { return cb(err); }
 
         // Create a new NeDB instance for each model (an NeDB instance is like one MongoDB collection),
@@ -204,7 +204,7 @@ module.exports = (function sailsDisk () {
 
         }, cb);//</ async.each() >
 
-      });
+      });//</ self-calling function>
     },
 
     //  ╔╦╗╔═╗╔═╗╦═╗╔╦╗╔═╗╦ ╦╔╗╔  ┌─┐┌─┐┌┐┌┌┐┌┌─┐┌─┐┌┬┐┬┌─┐┌┐┌
