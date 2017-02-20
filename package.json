@@ -1,10 +1,12 @@
 {
   "name": "sails-disk",
   "version": "1.0.0-5",
-  "description": "Persistent local-disk adapter for Sails.js / Waterline",
+  "description": "Persistent local-disk (and/or memory) adapter for Sails.js / Waterline.",
   "main": "index.js",
   "scripts": {
     "test": "rm -rf .tmp && node test/runner.js",
+    "posttest": "npm run lint",
+    "lint": "node ./node_modules/eslint/bin/eslint **/*.js *.js",
     "prepublish": "npm prune"
   },
   "repository": {
@@ -12,21 +14,24 @@
     "url": "git://github.com/balderdashy/sails-disk.git"
   },
   "keywords": [
+    "nedb",
+    "adapter",
     "waterline",
-    "database",
     "disk",
+    "memory",
+    "localdevdb",
+    "database",
     "sails",
     "sails.js",
     "sailsjs"
   ],
-  "author": "Mike McNeil",
+  "author": "The Sails Company",
   "contributors": [
-    {
-      "name": "Cody Stoltman"
-    }
+    { "name": "Scott Gress" },
+    { "name": "Cody Stoltman" },
+    { "name": "Mike McNeil" }
   ],
   "license": "MIT",
-  "readmeFilename": "README.md",
   "dependencies": {
     "@sailshq/lodash": "^3.10.2",
     "async": "2.0.1",
@@ -35,6 +40,7 @@
   },
   "devDependencies": {
     "mocha": "3.0.2",
+    "eslint": "2.11.1",
     "waterline-adapter-tests": "^1.0.0-2"
   },
   "waterlineAdapter": {

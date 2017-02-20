@@ -2,6 +2,8 @@
 
 A local disk adapter for the Sails framework and Waterline ORM.  Functions as a persistent object store which works great as a bundled, starter database (with the strict caveat that it is for non-production use only).  It is bundled with the `sails-hook-orm` hook that is included by default in new Sails projects.
 
+> Under the hood, this uses [nedb](http://npmjs.com/package/nedb).
+
 
 ## Help
 
@@ -22,5 +24,4 @@ Please observe the guidelines and conventions laid out in the [Sails project con
 
 ## License
 
-The [Sails framework](http://sailsjs.com) is free and open-source under the [MIT License](http://sailsjs.com/license).
-
+This package, like the [Sails framework](http://sailsjs.com), is free and open-source under the [MIT License](http://sailsjs.com/license).
