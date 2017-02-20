@@ -106,41 +106,41 @@ module.exports = (function sailsDisk () {
       }) (function proceed(err) {
         if (err) { return cb(err); }
 
-          // Create a new NeDB instance for each model (an NeDB instance is like one MongoDB collection),
-          // and load the instance from disk.  The `loadDatabase` NeDB method is asynchronous, hence the async.each.
-          async.each(_.keys(models), function(modelIdentity, next) {
+        // Create a new NeDB instance for each model (an NeDB instance is like one MongoDB collection),
+        // and load the instance from disk.  The `loadDatabase` NeDB method is asynchronous, hence the async.each.
+        async.each(_.keys(models), function(modelIdentity, next) {
 
-            // Get the model definition.
-            var modelDef = models[modelIdentity];
+          // Get the model definition.
+          var modelDef = models[modelIdentity];
 
-            var primaryKeyAttr = modelDef.definition[modelDef.primaryKey];
+          var primaryKeyAttr = modelDef.definition[modelDef.primaryKey];
 
-            // Ensure that the model's primary key has either `autoIncrement` or `required`
-            if (primaryKeyAttr.required !== true && (!primaryKeyAttr.autoMigrations || primaryKeyAttr.autoMigrations.autoIncrement !== true)) {
-              return next(new Error('In model `' + modelIdentity + '`, primary key `' + modelDef.primaryKey + '` must have either `required` or `autoIncrement` set.'));
-            }
+          // Ensure that the model's primary key has either `autoIncrement` or `required`
+          if (primaryKeyAttr.required !== true && (!primaryKeyAttr.autoMigrations || primaryKeyAttr.autoMigrations.autoIncrement !== true)) {
+            return next(new Error('In model `' + modelIdentity + '`, primary key `' + modelDef.primaryKey + '` must have either `required` or `autoIncrement` set.'));
+          }
 
-            // Get the model's primary key column.
-            var primaryKeyCol = modelDef.definition[modelDef.primaryKey].columnName;
+          // Get the model's primary key column.
+          var primaryKeyCol = modelDef.definition[modelDef.primaryKey].columnName;
 
-            // Store the primary key column in the datastore's primary key columns hash.
-            datastore.primaryKeyCols[modelDef.tableName] = primaryKeyCol;
+          // Store the primary key column in the datastore's primary key columns hash.
+          datastore.primaryKeyCols[modelDef.tableName] = primaryKeyCol;
 
-            // Declare a var to hold the table's sequence name (if any).
-            var sequenceName = null;
+          // Declare a var to hold the table's sequence name (if any).
+          var sequenceName = null;
 
-            // Create the nedb instance and save it to the `modelDbs` hash
-            var nedbConfig;
-            if (datastoreConfig.inMemoryOnly) {
-              nedbConfig = { inMemoryOnly: true };
-            } else {
-              nedbConfig = { filename: path.resolve(datastoreConfig.dir, modelDef.tableName + '.db') };
-            }
-            var db = new nedb(nedbConfig);
+          // Create the nedb instance and save it to the `modelDbs` hash
+          var nedbConfig;
+          if (datastoreConfig.inMemoryOnly) {
+            nedbConfig = { inMemoryOnly: true };
+          } else {
+            nedbConfig = { filename: path.resolve(datastoreConfig.dir, modelDef.tableName + '.db') };
+          }
+          var db = new nedb(nedbConfig);
 
-            datastore.dbs[modelDef.tableName] = db;
+          datastore.dbs[modelDef.tableName] = db;
 
-            try {
+          try {
             // Add any unique indexes and initialize any sequences.
             _.each(modelDef.definition, function(val, attributeName) {
 
@@ -173,10 +173,9 @@ module.exports = (function sailsDisk () {
                 datastore.sequences[sequenceName] = 0;
               }
 
-            });
-          } catch (e) {
-            return next(e);
-          }
+            });//</ _.each() >
+
+          } catch (e) { return next(e); }
 
           // Load the database from disk.  NeDB will replay any add/remove index calls before loading the data,
           // so making `loadDatabase` the last step ensures that we can safely migrate data without violating
@@ -196,13 +195,14 @@ module.exports = (function sailsDisk () {
                 // Otherwise set the sequence to the PK value.
                 datastore.sequences[sequenceName] = records[0][primaryKeyCol];
                 return next();
-              });
+              });//_∏_
               return;
-            }
+            }//-•
+
             return next();
           });
 
-        }, cb);
+        }, cb);//</ async.each() >
 
       });
     },
@@ -523,21 +523,23 @@ module.exports = (function sailsDisk () {
         else {
           return done();
         }
-      })
-      // Now, destroy the records.
-      (function afterMaybeFetchingRecords(records) {
+      })(function afterMaybeFetchingRecords(records) {
+
+        // ~∞%°
+        // Now, destroy the records.
 
         // Normalize the stage-3 query criteria into NeDB (really, MongoDB) criteria.
         var where = normalizeWhere(query.criteria.where);
 
         // Remove the documents from the db.
-        db.remove(where, {multi: true}, function(err, numAffected) {
+        db.remove(where, {multi: true}, function(err /*, numAffected */) {
 
           // If `fetch` was true, `records` will hold the records we just destroyed.
+          // (otherwise, it will be `undefined`)
           return cb(undefined, records);
 
         });
-      });
+      });//</ self-invoking function w/ callback >
 
     },
 
