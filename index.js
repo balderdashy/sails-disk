@@ -432,6 +432,12 @@ module.exports = (function sailsDisk () {
             });
           });
         }
+        // If the primary key column is `_id`, and we had a projection with just `_id`, transform the records
+        // to only contain that column.  This is a workaround for an issue in NeDB where doing a projection
+        // with just _id returns all the columns.
+        if (primaryKeyCol === '_id' && _.keys(projection).length === 1 && projection._id === 1) {
+          records = _.map(records, function(record) {return _.pick(record, '_id');});
+        }
         return cb(undefined, records);
       });
 
