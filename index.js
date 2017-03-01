@@ -83,7 +83,10 @@ module.exports = (function sailsDisk () {
         sequences: {},
         // We'll keep track of the primary keys of each model in this datastore in this dictionary,
         // indexed by table name.
-        primaryKeyCols: {}
+        primaryKeyCols: {},
+        // We'll keep track of every `ref` column in each model in this datastore in this dictionary,
+        // indexed by table name.
+        refCols: {}
       };
 
       // Add the datastore to the `datastores` dictionary.
@@ -168,6 +171,12 @@ module.exports = (function sailsDisk () {
               if (modelDef.primaryKey !== '_id' && val.autoMigrations && val.autoMigrations.autoIncrement && (attributeName === modelDef.primaryKey)) {
                 sequenceName = modelDef.tableName + '_' + val.columnName + '_seq';
                 datastore.sequences[sequenceName] = 0;
+              }
+
+              // If the attribute is a ref, save it to the `refCols` dictionary.
+              if (val.type === 'ref') {
+                datastore.refCols[modelDef.tableName] = datastore.refCols[modelDef.tableName] || [];
+                datastore.refCols[modelDef.tableName].push(val.columnName);
               }
 
             });//</ _.each() >
@@ -429,6 +438,18 @@ module.exports = (function sailsDisk () {
       // Find the documents in the db.
       findQuery.exec(function(err, records) {
         if (err) {return cb(err);}
+        // Does this model contain any attributes with type `ref`?
+        if (datastore.refCols[query.using].length > 0) {
+          // If so, loop through the records and transform refs to Buffers where possible.
+          _.each(records, function(record) {
+            _.each(datastore.refCols[query.using], function(colName) {
+              // If this looks like NeDB's idea of a serialized Buffer, turn it into a real buffer.
+              if (record[colName] && record[colName].type === 'Buffer' && _.isArray(record[colName].data)) {
+                record[colName] = new Buffer(record[colName].data);
+              }
+            });
+          });
+        }
         return cb(undefined, records);
       });
 
