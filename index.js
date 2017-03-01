@@ -173,6 +173,7 @@ module.exports = (function sailsDisk () {
                 datastore.sequences[sequenceName] = 0;
               }
 
+              datastore.refCols[modelDef.tableName] = datastore.refCols[modelDef.tableName] || [];
               // If the attribute is a ref, save it to the `refCols` dictionary.
               if (val.type === 'ref') {
                 datastore.refCols[modelDef.tableName] = datastore.refCols[modelDef.tableName] || [];
