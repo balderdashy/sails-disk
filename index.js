@@ -144,12 +144,6 @@ module.exports = (function sailsDisk () {
             // Add any unique indexes and initialize any sequences.
             _.each(modelDef.definition, function(val, attributeName) {
 
-              // If the attribute has a columnName of `_id`, bail.  That column name is reserved by sails-disk.
-              if (val.columnName === '_id') {
-                throw new Error('\nIn attribute `' + attributeName + '` of model `' + modelIdentity + '`:\n' +
-                                'When using sails-disk, the column name `_id` is reserved.\n');
-              }
-
               // If the attribute has `unique` set on it, or it's the primary key, add a unique index.
               if ((val.autoMigrations && val.autoMigrations.unique) || (attributeName === modelDef.primaryKey)) {
                 if (val.autoMigrations && val.autoMigrations.unique && (!val.required && (attributeName !== modelDef.primaryKey))) {
@@ -167,8 +161,8 @@ module.exports = (function sailsDisk () {
               }
 
               // If the attribute has `autoIncrement` on it, and it's the primary key,
-              // and the primary key ISN'T `_id`, initialize a sequence for it.
-              if (modelDef.primaryKey !== '_id' && val.autoMigrations && val.autoMigrations.autoIncrement && (attributeName === modelDef.primaryKey)) {
+              // initialize a sequence for it.
+              if (val.autoMigrations && val.autoMigrations.autoIncrement && (attributeName === modelDef.primaryKey)) {
                 sequenceName = modelDef.tableName + '_' + val.columnName + '_seq';
                 datastore.sequences[sequenceName] = 0;
               }
@@ -176,7 +170,6 @@ module.exports = (function sailsDisk () {
               datastore.refCols[modelDef.tableName] = datastore.refCols[modelDef.tableName] || [];
               // If the attribute is a ref, save it to the `refCols` dictionary.
               if (val.type === 'ref') {
-                datastore.refCols[modelDef.tableName] = datastore.refCols[modelDef.tableName] || [];
                 datastore.refCols[modelDef.tableName].push(val.columnName);
               }
 
@@ -276,11 +269,6 @@ module.exports = (function sailsDisk () {
       // Get the nedb for the table in question.
       var db = datastore.dbs[query.using];
 
-      // Clear out any `null` _id value.
-      if (_.isNull(query.newRecord._id)) {
-        delete query.newRecord._id;
-      }
-
       // If there is a sequence for this table, and the column name referenced in the table
       // does not have a value set, set it to the next value of the sequence.
       var primaryKeyCol = datastore.primaryKeyCols[query.using];
@@ -341,14 +329,7 @@ module.exports = (function sailsDisk () {
       // Get the possible sequence name for this table.
       var sequenceName = query.using + '_' + primaryKeyCol + '_seq';
 
-      // Clear out any `null` _id value.
       var newRecords = _.map(query.newRecords, function(newRecord) {
-
-        // If `null` is being sent in for this record's `_id` column, just delete it so that
-        // neDB sets it automatically.
-        if (_.isNull(newRecord._id)) {
-          delete newRecord._id;
-        }
 
         // If there is a sequence and `null` is being sent in for this record's primary key,
         // set it to the next value of the sequence.
