@@ -473,6 +473,39 @@ module.exports = (function sailsDisk () {
       // Normalize the stage-3 query criteria into NeDB (really, MongoDB) criteria.
       var where = normalizeWhere(query.criteria.where);
 
+      // If the user is attempting to change the primary key, do a drop/add instead.
+      if (query.valuesToSet[primaryKeyCol]) {
+        // Don't allow updating _id, since nedb doesn't support it.
+        if (primaryKeyCol === '_id') { return cb(new Error('Cannot change primary key using sails-disk adapter when the primary key column is `_id`.')); }
+        // Find the record in question.
+        adapter.find(datastoreName, _.cloneDeep(query), function(err, records) {
+          if (err) { return cb(err); }
+          // Shortcut for when there is no matching record.
+          if (records.length === 0) { return cb(undefined, (query.meta && query.meta.fetch) ? [] : undefined); }
+          // If more than one record matches, throw an error since you can't update multiple records to have the same PK value.
+          if (records.length > 1) { return cb(new Error('Cannot use `.update()` to change the primary key when the query matches multiple records.')); }
+          // Get the single returned record.
+          var record = records[0];
+          // Destroy the record.
+          adapter.destroy(datastoreName, _.cloneDeep(query), function(err) {
+            if (err) { return cb(err); }
+            // Remove the _id field; `.create()` will set it for us.
+            delete record._id;
+            // Update the record values with those that were sent in with the original `update` query.
+            _.extend(record, query.valuesToSet);
+            // Create a new record with the updated values.
+            adapter.create(datastoreName, { using: query.using, newRecord: record, meta: query.meta }, function(err, record) {
+              if (err) {return cb(err);}
+              return cb(undefined, record ? [record] : undefined);
+            });
+          });
+        });
+        return;
+      }
+
+      // If the primary key col for this table isn't `_id`, set `_id` to the primary key value.
+      if (primaryKeyCol !== '_id' && query.valuesToSet[primaryKeyCol]) { query.valuesToSet._id = query.valuesToSet[primaryKeyCol]; }
+
       // Update the documents in the db.
       db.update(where, {'$set': query.valuesToSet}, {multi: true, returnUpdatedDocs: true}, function(err, numAffected, updatedRecords) {
         if (err) {
