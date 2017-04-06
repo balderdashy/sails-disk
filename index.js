@@ -277,6 +277,9 @@ module.exports = (function sailsDisk () {
         query.newRecord[primaryKeyCol] = ++datastore.sequences[sequenceName];
       }
 
+      // If the primary key col for this table isn't `_id`, set `_id` to the primary key value.
+      if (primaryKeyCol !== '_id') { query.newRecord._id = query.newRecord[primaryKeyCol]; }
+
       // Insert the documents into the db.
       db.insert(query.newRecord, function(err, newRecord) {
         if (err) {
@@ -336,6 +339,9 @@ module.exports = (function sailsDisk () {
         if (!_.isUndefined(datastore.sequences[sequenceName]) && _.isNull(newRecord[primaryKeyCol]) || newRecord[primaryKeyCol] === 0) {
           newRecord[primaryKeyCol] = ++datastore.sequences[sequenceName];
         }
+
+        // If the primary key col for this table isn't `_id`, set `_id` to the primary key value.
+        if (primaryKeyCol !== '_id') { newRecord._id = newRecord[primaryKeyCol]; }
 
         return newRecord;
       });
