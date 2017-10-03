@@ -4,10 +4,9 @@
   "description": "Persistent local-disk (and/or memory) adapter for Sails.js / Waterline.",
   "main": "index.js",
   "scripts": {
-    "test": "rm -rf .tmp && node test/runner.js",
-    "posttest": "npm run lint",
-    "lint": "node ./node_modules/eslint/bin/eslint **/*.js *.js",
-    "prepublish": "npm prune"
+    "test": "npm run lint && npm run custom-tests",
+    "custom-tests": "rm -rf .tmp && node test/runner.js",
+    "lint": "node ./node_modules/eslint/bin/eslint **/*.js *.js --max-warnings=0"
   },
   "repository": {
     "type": "git",
