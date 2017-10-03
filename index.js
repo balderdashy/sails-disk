@@ -265,6 +265,7 @@ module.exports = (function sailsDisk () {
 
       // Get a reference to the datastore.
       var datastore = datastores[datastoreName];
+      if (!datastore) { return cb(new Error('Unrecognized datastore: `'+datastoreName+'`,  It doesn\'t seem to have been registered with this adapter (sails-disk).')); }
 
       // Get the nedb for the table in question.
       var db = datastore.dbs[query.using];
@@ -322,6 +323,7 @@ module.exports = (function sailsDisk () {
 
       // Get a reference to the datastore.
       var datastore = datastores[datastoreName];
+      if (!datastore) { return cb(new Error('Unrecognized datastore: `'+datastoreName+'`,  It doesn\'t seem to have been registered with this adapter (sails-disk).')); }
 
       // Get the nedb for the table in question.
       var db = datastore.dbs[query.using];
@@ -383,6 +385,7 @@ module.exports = (function sailsDisk () {
 
       // Get a reference to the datastore.
       var datastore = datastores[datastoreName];
+      if (!datastore) { return cb(new Error('Unrecognized datastore: `'+datastoreName+'`,  It doesn\'t seem to have been registered with this adapter (sails-disk).')); }
 
       // Get the nedb for the table in question.
       var db = datastore.dbs[query.using];
@@ -463,6 +466,7 @@ module.exports = (function sailsDisk () {
 
       // Get a reference to the datastore.
       var datastore = datastores[datastoreName];
+      if (!datastore) { return cb(new Error('Unrecognized datastore: `'+datastoreName+'`,  It doesn\'t seem to have been registered with this adapter (sails-disk).')); }
 
       // Get the nedb for the table in question.
       var db = datastore.dbs[query.using];
@@ -551,6 +555,7 @@ module.exports = (function sailsDisk () {
 
       // Get a reference to the datastore.
       var datastore = datastores[datastoreName];
+      if (!datastore) { return cb(new Error('Unrecognized datastore: `'+datastoreName+'`,  It doesn\'t seem to have been registered with this adapter (sails-disk).')); }
 
       // Get the nedb for the table in question.
       var db = datastore.dbs[query.using];
@@ -652,6 +657,7 @@ module.exports = (function sailsDisk () {
 
       // Get a reference to the datastore.
       var datastore = datastores[datastoreName];
+      if (!datastore) { return cb(new Error('Unrecognized datastore: `'+datastoreName+'`,  It doesn\'t seem to have been registered with this adapter (sails-disk).')); }
 
       // Get the nedb for the table in question.
       var db = datastore.dbs[query.using];
@@ -692,6 +698,7 @@ module.exports = (function sailsDisk () {
 
       // Get a reference to the datastore.
       var datastore = datastores[datastoreName];
+      if (!datastore) { return cb(new Error('Unrecognized datastore: `'+datastoreName+'`,  It doesn\'t seem to have been registered with this adapter (sails-disk).')); }
 
       var db;
 
@@ -735,6 +742,7 @@ module.exports = (function sailsDisk () {
 
       // Get a reference to the datastore.
       var datastore = datastores[datastoreName];
+      if (!datastore) { return cb(new Error('Unrecognized datastore: `'+datastoreName+'`,  It doesn\'t seem to have been registered with this adapter (sails-disk).')); }
 
       // If memory only, just remove the reference to the nedb for the collection.
       if (datastore.config.inMemoryOnly === true) {
@@ -759,6 +767,7 @@ module.exports = (function sailsDisk () {
 
       // Get a reference to the datastore.
       var datastore = datastores[datastoreName];
+      if (!datastore) { return cb(new Error('Unrecognized datastore: `'+datastoreName+'`,  It doesn\'t seem to have been registered with this adapter (sails-disk).')); }
 
       // Set the sequence.
       datastore.sequences[sequenceName] = sequenceValue;
