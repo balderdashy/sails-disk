@@ -6,7 +6,7 @@
   "scripts": {
     "test": "npm run lint && npm run custom-tests",
     "custom-tests": "rm -rf .tmp && node test/runner.js",
-    "lint": "node ./node_modules/eslint/bin/eslint **/*.js *.js --max-warnings=0"
+    "lint": "eslint **/*.js *.js --max-warnings=0"
   },
   "repository": {
     "type": "git",
@@ -45,7 +45,7 @@
   },
   "devDependencies": {
     "mocha": "3.0.2",
-    "eslint": "2.11.1",
+    "@sailshq/eslint": "^4.19.3",
     "waterline-adapter-tests": "^1.0.0-2"
   },
   "waterlineAdapter": {
