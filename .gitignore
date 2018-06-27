@@ -12,12 +12,13 @@
 #
 
 ############################
-# sails / node.js / npm
+# sails / node.js / npm / yarn
 ############################
 node_modules
 npm-debug.log
 .node_history
 package-lock.json
+yarn.lock
 
 ############################
 # editor & OS files

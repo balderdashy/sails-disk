@@ -22,6 +22,13 @@ module.exports = (function sailsDisk () {
   //
   var datastores = {};
 
+  var dir;
+  if(typeof sails !== 'undefined') {
+    dir = sails.config.paths.tmp;
+  } else {
+    dir = '.tmp';
+  }
+
   // The main adapter object.
   var adapter = {
 
@@ -34,7 +41,7 @@ module.exports = (function sailsDisk () {
     // Default configuration for connections
     defaults: {
       schema: false,
-      dir: '.tmp/localDiskDb'
+      dir: path.join(dir, 'localDiskDb')
     },
 
     //  ╔═╗═╗ ╦╔═╗╔═╗╔═╗╔═╗  ┌─┐┬─┐┬┬  ┬┌─┐┌┬┐┌─┐

@@ -24,7 +24,8 @@
   },
 
   "globals": {
-    "Promise": true
+    "Promise": true,
+    "sails": true
     // ^^Available since Node v4
   },
 
