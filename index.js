@@ -603,19 +603,23 @@ module.exports = (function sailsDisk () {
      * Find out the average of the query.
      * @param  {String}       datastoreName The name of the datastore to perform the query on.
      * @param  {Dictionary}   query         The stage-3 query to perform.
-     * @param  {Function}     cb            Callback
+     * @param  {Function}     done            Callback
      */
-    avg: function avg(datastoreName, query, cb) {
+    avg: function avg(datastoreName, query, done) {
 
       adapter.find(datastoreName, query, function(err, records) {
 
-        if (err) { return cb(err); }
+        if (err) { return done(err); }
 
-        var sum = _.reduce(records, function(memo, row) { return memo + row[query.numericAttrName]; }, 0);
-        var avg = sum / records.length;
-        return cb(undefined, avg);
+        if (records.length === 0) {// see https://github.com/balderdashy/waterline/commit/cea8b5945acddac91bc4ab89a545dad8c25a6ba3
+          return done(undefined, 0);
+        } else {
+          var total = _.reduce(records, function(memo, row) { return memo + row[query.numericAttrName]; }, 0);
+          var arithmeticMean = total / records.length;
+          return done(undefined, arithmeticMean);
+        }
 
-      });
+      });//_∏_
 
     },
 
@@ -627,19 +631,22 @@ module.exports = (function sailsDisk () {
      * Find out the sum of the query.
      * @param  {String}       datastoreName The name of the datastore to perform the query on.
      * @param  {Dictionary}   query         The stage-3 query to perform.
-     * @param  {Function}     cb            Callback
+     * @param  {Function}     done            Callback
      */
-    sum: function sum(datastoreName, query, cb) {
+    sum: function sum(datastoreName, query, done) {
 
       adapter.find(datastoreName, query, function(err, records) {
 
-        if (err) { return cb(err); }
+        if (err) { return done(err); }
 
-        var sum = _.reduce(records, function(memo, row) { return memo + row[query.numericAttrName]; }, 0);
-        return cb(undefined, sum);
+        if (records.length === 0) {// see https://github.com/balderdashy/waterline/commit/cea8b5945acddac91bc4ab89a545dad8c25a6ba3
+          return done(undefined, 0);
+        } else {
+          var total = _.reduce(records, function(memo, row) { return memo + row[query.numericAttrName]; }, 0);
+          return done(undefined, total);
+        }
 
-      });
-
+      });//_∏_
 
     },
 
