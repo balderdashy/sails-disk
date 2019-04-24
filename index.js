@@ -142,35 +142,34 @@ module.exports = (function sailsDisk () {
 
           try {
             // Add any unique indexes and initialize any sequences.
-            _.each(modelDef.definition, function(val, attributeName) {
-
+            _.each(modelDef.definition, function(wlsAttrDef, attributeName) {
               // If the attribute has `unique` set on it, or it's the primary key, add a unique index.
-              if ((val.autoMigrations && val.autoMigrations.unique) || (attributeName === modelDef.primaryKey)) {
-                if (val.autoMigrations && val.autoMigrations.unique && (!val.required && (attributeName !== modelDef.primaryKey))) {
+              if ((wlsAttrDef.autoMigrations && wlsAttrDef.autoMigrations.unique) || (attributeName === modelDef.primaryKey)) {
+                if (wlsAttrDef.autoMigrations && wlsAttrDef.autoMigrations.unique && (!wlsAttrDef.required && !wlsAttrDef.foreignKey && (attributeName !== modelDef.primaryKey))) {
                   throw new Error('\nIn attribute `' + attributeName + '` of model `' + modelIdentity + '`:\n' +
                                   'When using sails-disk, any attribute with `unique: true` must also have `required: true`\n');
                 }
                 db.ensureIndex({
-                  fieldName: val.columnName,
+                  fieldName: wlsAttrDef.columnName,
                   unique: true
                 });
               }
               // Otherwise, remove any index that may have been added previously.
               else {
-                db.removeIndex(val.columnName);
+                db.removeIndex(wlsAttrDef.columnName);
               }
 
               // If the attribute has `autoIncrement` on it, and it's the primary key,
               // initialize a sequence for it.
-              if (val.autoMigrations && val.autoMigrations.autoIncrement && (attributeName === modelDef.primaryKey)) {
-                sequenceName = modelDef.tableName + '_' + val.columnName + '_seq';
+              if (wlsAttrDef.autoMigrations && wlsAttrDef.autoMigrations.autoIncrement && (attributeName === modelDef.primaryKey)) {
+                sequenceName = modelDef.tableName + '_' + wlsAttrDef.columnName + '_seq';
                 datastore.sequences[sequenceName] = 0;
               }
 
               datastore.refCols[modelDef.tableName] = datastore.refCols[modelDef.tableName] || [];
               // If the attribute is a ref, save it to the `refCols` dictionary.
-              if (val.type === 'ref') {
-                datastore.refCols[modelDef.tableName].push(val.columnName);
+              if (wlsAttrDef.type === 'ref') {
+                datastore.refCols[modelDef.tableName].push(wlsAttrDef.columnName);
               }
 
             });//</ _.each() >
