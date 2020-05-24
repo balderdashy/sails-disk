@@ -3,9 +3,9 @@
  */
 
 var _ = require('@sailshq/lodash');
+var path = require('path');
 var async = require('async');
 var nedb = require('nedb');
-var path = require('path');
 var Filesystem = require('machinepack-fs');
 
 var normalizeWhere = require('./lib/normalize-where');
