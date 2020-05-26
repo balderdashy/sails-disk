@@ -1,6 +1,6 @@
 {
   "name": "sails-disk",
-  "version": "2.0.0-1",
+  "version": "2.0.0-2",
   "description": "Persistent local-disk (and/or memory) adapter for Sails.js / Waterline.",
   "main": "index.js",
   "scripts": {
