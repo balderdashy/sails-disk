@@ -115,9 +115,13 @@ module.exports = (function sailsDisk () {
 
           var primaryKeyAttr = modelDef.definition[modelDef.primaryKey];
 
-          // Ensure that the model's primary key has either `autoIncrement` or `required`
-          if (primaryKeyAttr.required !== true && (!primaryKeyAttr.autoMigrations || primaryKeyAttr.autoMigrations.autoIncrement !== true)) {
-            return next(new Error('In model `' + modelIdentity + '`, primary key `' + modelDef.primaryKey + '` must have either `required` or `autoIncrement` set.'));
+          // Ensure that the model's primary key has either `autoIncrement`, `imitateMongo`, or `required`
+          if (
+            (!primaryKeyAttr.autoMigrations || primaryKeyAttr.autoMigrations.autoIncrement !== true) &&
+            primaryKeyAttr.required !== true &&
+            (!primaryKeyAttr.autoMigrations || primaryKeyAttr.autoMigrations.imitateMongo !== true)
+          ) {
+            return next(new Error('In model `' + modelIdentity + '`, primary key `' + modelDef.primaryKey + '` must have either `required`, `autoIncrement`, or `imitateMongo` set.'));
           }
 
           // Get the model's primary key column.
@@ -299,7 +303,7 @@ module.exports = (function sailsDisk () {
           return cb(err);
         }
         if (query.meta && query.meta.fetch) {
-          // If the primary key col for this table isn't `_id`, exclude it from the returned records.
+          // If the primary key col for this table isn't `_id`, exclude `_id` from the returned records.
           if (primaryKeyCol !== '_id') { delete newRecord._id; }
           return cb(undefined, newRecord);
         }
@@ -359,7 +363,7 @@ module.exports = (function sailsDisk () {
           return cb(err);
         }
         if (query.meta && query.meta.fetch) {
-          // If the primary key col for this table isn't `_id`, exclude it from the returned records.
+          // If the primary key col for this table isn't `_id`, exclude `_id` from the returned records.
           if (primaryKeyCol !== '_id') {
             newRecords = _.map(newRecords, function(newRecord) {delete newRecord._id; return newRecord;});
           }
