@@ -115,13 +115,14 @@ module.exports = (function sailsDisk () {
 
           var primaryKeyAttr = modelDef.definition[modelDef.primaryKey];
 
-          // Ensure that the model's primary key has either `autoIncrement`, `imitateMongo`, or `required`
+          // Ensure that the model's primary key has either `autoIncrement`, `required`, or `type: string` with no default
+          // (in the latter scenario, mongo-like object ids will be used)
           if (
             (!primaryKeyAttr.autoMigrations || primaryKeyAttr.autoMigrations.autoIncrement !== true) &&
             primaryKeyAttr.required !== true &&
-            (!primaryKeyAttr.autoMigrations || primaryKeyAttr.autoMigrations.imitateMongo !== true)
+            (primaryKeyAttr.type !== 'string' || primaryKeyAttr.required)
           ) {
-            return next(new Error('In model `' + modelIdentity + '`, primary key `' + modelDef.primaryKey + '` must have either `required`, `autoIncrement`, or `imitateMongo` set.'));
+            return next(new Error('In model `' + modelIdentity + '`, primary key `' + modelDef.primaryKey + '` must have either `autoIncrement` set (for SQL-like ids), `required: true` for explicitly-set PKs (rare), or `type: \'string\'` and optional w/ no `defaultsTo` (for mongo-like object IDs).'));
           }
 
           // Get the model's primary key column.
@@ -274,11 +275,16 @@ module.exports = (function sailsDisk () {
       var db = datastore.dbs[query.using];
 
       // If there is a sequence for this table, and the column name referenced in the table
-      // does not have a value set, set it to the next value of the sequence.
+      // does not have a value set, set it to the next value of the sequence.  Otherwise,
+      // delete `_id` so a mongo-style object id will be used.
       var primaryKeyCol = datastore.primaryKeyCols[query.using];
       var sequenceName = query.using + '_' + primaryKeyCol + '_seq';
-      if (!_.isUndefined(datastore.sequences[sequenceName]) && _.isNull(query.newRecord[primaryKeyCol]) || query.newRecord[primaryKeyCol] === 0) {
-        query.newRecord[primaryKeyCol] = ++datastore.sequences[sequenceName];
+      if (!query.newRecord[primaryKeyCol]) {
+        if (datastore.sequences[sequenceName] !== undefined) {
+          query.newRecord[primaryKeyCol] = ++datastore.sequences[sequenceName];
+        } else {
+          delete query.newRecord[primaryKeyCol];
+        }
       }
 
       // If the primary key col for this table isn't `_id`, set `_id` to the primary key value.
@@ -339,10 +345,15 @@ module.exports = (function sailsDisk () {
 
       var newRecords = _.map(query.newRecords, function(newRecord) {
 
-        // If there is a sequence and `null` is being sent in for this record's primary key,
-        // set it to the next value of the sequence.
-        if (!_.isUndefined(datastore.sequences[sequenceName]) && _.isNull(newRecord[primaryKeyCol]) || newRecord[primaryKeyCol] === 0) {
-          newRecord[primaryKeyCol] = ++datastore.sequences[sequenceName];
+        // If there is a sequence for this table, and the column name referenced in the table
+        // does not have a value set, set it to the next value of the sequence.  Otherwise,
+        // delete `_id` so a mongo-style object id will be used.
+        if (!newRecord[primaryKeyCol]) {
+          if (datastore.sequences[sequenceName] !== undefined) {
+            newRecord[primaryKeyCol] = ++datastore.sequences[sequenceName];
+          } else {
+            delete newRecord[primaryKeyCol];
+          }
         }
 
         // If the primary key col for this table isn't `_id`, set `_id` to the primary key value.
