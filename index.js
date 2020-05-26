@@ -426,7 +426,7 @@ module.exports = (function sailsDisk () {
       var primaryKeyCol = datastore.primaryKeyCols[query.using];
 
       // Normalize the stage-3 query criteria into NeDB (really, MongoDB) criteria.
-      var where = normalizeWhere(query.criteria.where);
+      var where = normalizeWhere(query.criteria.where, query.meta);
 
       // Transform the stage-3 query sort array into an NeDB sort dictionary.
       var sort = _.reduce(query.criteria.sort, function(memo, sortObj) {
@@ -508,7 +508,7 @@ module.exports = (function sailsDisk () {
       var primaryKeyCol = datastore.primaryKeyCols[query.using];
 
       // Normalize the stage-3 query criteria into NeDB (really, MongoDB) criteria.
-      var where = normalizeWhere(query.criteria.where);
+      var where = normalizeWhere(query.criteria.where, query.meta);
 
       // If the user is attempting to change the primary key, do a drop/add instead.
       if (query.valuesToSet[primaryKeyCol]) {
@@ -612,7 +612,7 @@ module.exports = (function sailsDisk () {
         // Now, destroy the records.
 
         // Normalize the stage-3 query criteria into NeDB (really, MongoDB) criteria.
-        var where = normalizeWhere(query.criteria.where);
+        var where = normalizeWhere(query.criteria.where, query.meta);
 
         // Remove the documents from the db.
         db.remove(where, {multi: true}, function(err /*, numAffected */) {
@@ -703,7 +703,7 @@ module.exports = (function sailsDisk () {
       var db = datastore.dbs[query.using];
 
       // Normalize the stage-3 query criteria into NeDB (really, MongoDB) criteria.
-      var where = normalizeWhere(query.criteria.where);
+      var where = normalizeWhere(query.criteria.where, query.meta);
 
       // Count the documents into the db.
       db.count(where, cb);
