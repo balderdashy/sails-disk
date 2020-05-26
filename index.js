@@ -2,10 +2,11 @@
  * Module dependencies
  */
 
+var path = require('path');
 var _ = require('@sailshq/lodash');
 var async = require('async');
+var flaverr = require('flaverr');
 var nedb = require('nedb');
-var path = require('path');
 var Filesystem = require('machinepack-fs');
 
 var normalizeWhere = require('./lib/normalize-where');
@@ -63,6 +64,8 @@ module.exports = (function sailsDisk () {
 
     registerDatastore: function registerDatastore(datastoreConfig, models, cb) {
 
+      let omen;//« used below for better stack traces
+
       // Get the unique identity for this datastore.
       var identity = datastoreConfig.identity;
       if (!identity) {
@@ -92,6 +95,7 @@ module.exports = (function sailsDisk () {
       // Add the datastore to the `datastores` dictionary.
       datastores[identity] = datastore;
 
+      omen = new Error();
       (function determineDiskOrMemory (proceed) {
 
         if (datastoreConfig.inMemoryOnly === true) {
@@ -99,12 +103,17 @@ module.exports = (function sailsDisk () {
         }
         // Ensure that the given folder exists
         Filesystem.ensureDir({ path: datastoreConfig.dir }).exec(function(err) {
-          if (err) {return proceed(err);}
+          if (err) {
+            return proceed(flaverr({
+              message: `Could not load sails-disk adapter (could not ensure existence of directory for storing local data).  ${err.message}`,
+              raw: err
+            }, omen));
+          }
           return proceed();
         });
 
       }) (function (err) {
-        if (err) { return cb(err); }
+        if (err) { return cb(flaverr({message: err.message, raw: err}, omen)); }
 
         // Create a new NeDB instance for each model (an NeDB instance is like one MongoDB collection),
         // and load the instance from disk.  The `loadDatabase` NeDB method is asynchronous, hence the async.each.
@@ -115,9 +124,14 @@ module.exports = (function sailsDisk () {
 
           var primaryKeyAttr = modelDef.definition[modelDef.primaryKey];
 
-          // Ensure that the model's primary key has either `autoIncrement` or `required`
-          if (primaryKeyAttr.required !== true && (!primaryKeyAttr.autoMigrations || primaryKeyAttr.autoMigrations.autoIncrement !== true)) {
-            return next(new Error('In model `' + modelIdentity + '`, primary key `' + modelDef.primaryKey + '` must have either `required` or `autoIncrement` set.'));
+          // Ensure that the model's primary key has either `autoIncrement`, `required`, or `type: string` with no default
+          // (in the latter scenario, mongo-like object ids will be used)
+          if (
+            (!primaryKeyAttr.autoMigrations || primaryKeyAttr.autoMigrations.autoIncrement !== true) &&
+            primaryKeyAttr.required !== true &&
+            (primaryKeyAttr.type !== 'string' || primaryKeyAttr.required)
+          ) {
+            return next(new Error('In model `' + modelIdentity + '`, primary key `' + modelDef.primaryKey + '` must have either `autoIncrement` set (for SQL-like ids), `required: true` for explicitly-set PKs (rare), or `type: \'string\'` and optional (for mongo-like object IDs).'));
           }
 
           // Get the model's primary key column.
@@ -174,21 +188,30 @@ module.exports = (function sailsDisk () {
 
             });//</ _.each() >
 
-          } catch (e) { return next(e); }
+          } catch (err) { return next(err); }
+
 
           // Load the database from disk.  NeDB will replay any add/remove index calls before loading the data,
           // so making `loadDatabase` the last step ensures that we can safely migrate data without violating
           // key constraints that have been removed.
+          omen = new Error();
           db.loadDatabase(function(err) {
-            if (err) { return next(err); }
+            if (err) {
+              return next(flaverr({
+                message: `sails-disk cannot load neDB database due to an unexpected error.  (This may be due to a recent configuration change in this app that made the old locally-stored data invalid.  To troubleshoot, try deleting .tmp/).  Technical details: ${err.message}`,
+                raw: err
+              }, omen));
+            }
+
             // If there's a sequence for this table, then load the records in reverse PK order
             // to get the last sequence value.
             if (sequenceName) {
               var sortObj = {};
               sortObj[primaryKeyCol] = -1;
               // Find the record with the highest PK value.
+              omen = new Error();
               db.find({}).sort(sortObj).limit(1).exec(function(err, records) {
-                if (err) { return next(err); }
+                if (err) { return next(flaverr({message: err.message, raw: err}, omen)); }
                 // No records yet?  Leave the sequence at zero.
                 if (records.length === 0) { return next(err); }
                 // Otherwise set the sequence to the PK value.
@@ -270,12 +293,18 @@ module.exports = (function sailsDisk () {
       var db = datastore.dbs[query.using];
 
       // If there is a sequence for this table, and the column name referenced in the table
-      // does not have a value set, set it to the next value of the sequence.
+      // does not have a value set, set it to the next value of the sequence.  Otherwise,
+      // delete `_id` so a mongo-style object id will be used.
       var primaryKeyCol = datastore.primaryKeyCols[query.using];
       var sequenceName = query.using + '_' + primaryKeyCol + '_seq';
-      if (!_.isUndefined(datastore.sequences[sequenceName]) && _.isNull(query.newRecord[primaryKeyCol]) || query.newRecord[primaryKeyCol] === 0) {
-        query.newRecord[primaryKeyCol] = ++datastore.sequences[sequenceName];
+      if (!query.newRecord[primaryKeyCol]) {
+        if (datastore.sequences[sequenceName] !== undefined) {
+          query.newRecord[primaryKeyCol] = ++datastore.sequences[sequenceName];
+        } else {
+          delete query.newRecord[primaryKeyCol];
+        }
       }
+      // newRecord[primaryKeyCol] === 0
 
       // If the primary key col for this table isn't `_id`, set `_id` to the primary key value.
       if (primaryKeyCol !== '_id') { query.newRecord._id = query.newRecord[primaryKeyCol]; }
@@ -299,7 +328,7 @@ module.exports = (function sailsDisk () {
           return cb(err);
         }
         if (query.meta && query.meta.fetch) {
-          // If the primary key col for this table isn't `_id`, exclude it from the returned records.
+          // If the primary key col for this table isn't `_id`, exclude `_id` from the returned records.
           if (primaryKeyCol !== '_id') { delete newRecord._id; }
           return cb(undefined, newRecord);
         }
@@ -335,10 +364,15 @@ module.exports = (function sailsDisk () {
 
       var newRecords = _.map(query.newRecords, function(newRecord) {
 
-        // If there is a sequence and `null` is being sent in for this record's primary key,
-        // set it to the next value of the sequence.
-        if (!_.isUndefined(datastore.sequences[sequenceName]) && _.isNull(newRecord[primaryKeyCol]) || newRecord[primaryKeyCol] === 0) {
-          newRecord[primaryKeyCol] = ++datastore.sequences[sequenceName];
+        // If there is a sequence for this table, and the column name referenced in the table
+        // does not have a value set, set it to the next value of the sequence.  Otherwise,
+        // delete `_id` so a mongo-style object id will be used.
+        if (!newRecord[primaryKeyCol]) {
+          if (datastore.sequences[sequenceName] !== undefined) {
+            newRecord[primaryKeyCol] = ++datastore.sequences[sequenceName];
+          } else {
+            delete newRecord[primaryKeyCol];
+          }
         }
 
         // If the primary key col for this table isn't `_id`, set `_id` to the primary key value.
@@ -359,7 +393,7 @@ module.exports = (function sailsDisk () {
           return cb(err);
         }
         if (query.meta && query.meta.fetch) {
-          // If the primary key col for this table isn't `_id`, exclude it from the returned records.
+          // If the primary key col for this table isn't `_id`, exclude `_id` from the returned records.
           if (primaryKeyCol !== '_id') {
             newRecords = _.map(newRecords, function(newRecord) {delete newRecord._id; return newRecord;});
           }
@@ -528,7 +562,7 @@ module.exports = (function sailsDisk () {
           return cb(err);
         }//-•
         if (query.meta && query.meta.fetch) {
-          // If the primary key col for this table isn't `_id`, exclude it from the returned records.
+          // If the primary key col for this table isn't `_id`, exclude `_id` from the returned records.
           if (primaryKeyCol !== '_id') {
             updatedRecords = _.map(updatedRecords, function(updatedRecord) {delete updatedRecord._id; return updatedRecord;});
           }
