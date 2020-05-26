@@ -532,7 +532,7 @@ module.exports = (function sailsDisk () {
           return cb(err);
         }//-•
         if (query.meta && query.meta.fetch) {
-          // If the primary key col for this table isn't `_id`, exclude it from the returned records.
+          // If the primary key col for this table isn't `_id`, exclude `_id` from the returned records.
           if (primaryKeyCol !== '_id') {
             updatedRecords = _.map(updatedRecords, function(updatedRecord) {delete updatedRecord._id; return updatedRecord;});
           }
