@@ -6,7 +6,7 @@ var path = require('path');
 var _ = require('@sailshq/lodash');
 var async = require('async');
 var flaverr = require('flaverr');
-var nedb = require('nedb');
+var nedb = require('@sailshq/nedb');
 var Filesystem = require('machinepack-fs');
 
 var normalizeWhere = require('./lib/normalize-where');
