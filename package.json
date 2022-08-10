@@ -39,10 +39,10 @@
   "license": "MIT",
   "dependencies": {
     "@sailshq/lodash": "^3.10.2",
-    "async": "2.0.1",
+    "async": "2.6.4",
     "flaverr": "^1.10.0",
     "machinepack-fs": "^12.0.1",
-    "@sailshq/nedb": "1.8.1"
+    "@sailshq/nedb": "^1.8.2"
   },
   "devDependencies": {
     "mocha": "3.0.2",
